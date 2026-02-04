@@ -1,0 +1,87 @@
+.stock-table-container {
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stock-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.stock-table thead {
+  background-color: #f6f6f6;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.stock-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 13px;
+}
+
+.stock-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stock-table th.sortable:hover {
+  color: #0f69fe;
+}
+
+.stock-table tbody tr {
+  border-bottom: 1px solid #e0e0e0;
+  transition: background-color 0.2s;
+}
+
+.stock-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.stock-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.stock-table td {
+  padding: 12px 16px;
+  color: #1a1a1a;
+}
+
+.stock-table .symbol a {
+  color: #0f69fe;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.stock-table .symbol a:hover {
+  text-decoration: underline;
+}
+
+.stock-table .company-name {
+  color: #666;
+}
+
+.stock-table .change {
+  font-weight: 600;
+}
+
+.stock-table .change.positive {
+  color: #0c8a5b;
+}
+
+.stock-table .change.negative {
+  color: #e03a3a;
+}
+
+.stock-table .price {
+  font-weight: 500;
+}
+
+.stock-table .volume,
+.stock-table .market-cap {
+  color: #666;
+}

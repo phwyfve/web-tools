@@ -1,0 +1,7 @@
+caskada>=0.0.1
+requests>=2.28.0
+beautifulsoup4>=4.11.0
+youtube-transcript-api>=0.6.0
+youtube-search>=2.2.0
+openai>=1.0.0
+pyyaml>=6.0

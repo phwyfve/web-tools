@@ -1,0 +1,141 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 200px;
+  background-color: #fff;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px 0;
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-header {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sidebar-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.sidebar-nav {
+  list-style: none;
+  padding: 10px 0;
+}
+
+.sidebar-nav li {
+  margin: 2px 0;
+}
+
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  color: #1a1a1a;
+  text-decoration: none;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.sidebar-nav a:hover {
+  background-color: #f6f6f6;
+  text-decoration: none;
+}
+
+.sidebar-nav li.active a {
+  background-color: #e6f0ff;
+  color: #0f69fe;
+  font-weight: 500;
+}
+
+.sidebar-nav .icon {
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: #f6f6f6;
+  border-radius: 20px;
+  padding: 8px 16px;
+  width: 400px;
+}
+
+.search-icon {
+  margin-right: 8px;
+  color: #666;
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+}
+
+.user-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #0f69fe;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0052cc;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: #0f69fe;
+  border: 1px solid #0f69fe;
+}
+
+.btn-secondary:hover {
+  background-color: #e6f0ff;
+}
+
+.content {
+  padding: 24px;
+  flex: 1;
+}

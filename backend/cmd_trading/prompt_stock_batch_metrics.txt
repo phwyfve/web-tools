@@ -1,0 +1,252 @@
+You are creating a Caskada flow for a market data analytics pipeline.
+
+The flow computes daily market metrics and leaderboards for a watchlist of instruments.
+The system uses Yahoo Finance as the historical price data source and MongoDB as storage.
+
+The flow must be deterministic, restart-safe, and strictly as-of-date (no lookahead).
+
+────────────────────────────────────────
+GLOBAL DEFINITIONS
+────────────────────────────────────────
+
+Execution date:
+- The flow runs once per day, after market close.
+- All computations are performed as-of date D.
+
+Data principles:
+- daily_bars = raw historical truth (immutable)
+- daily_metrics = derived metrics (recomputable)
+- leaderboards = derived rankings (recomputable)
+
+────────────────────────────────────────
+NODE 1 — Load Instruments
+────────────────────────────────────────
+
+Purpose:
+- Load the list of instruments to process.
+
+Input:
+- MongoDB collection: instruments
+- Filter: active = true
+
+Output (in memory):
+[
+  {
+    "instrumentId": "XNAS:AAPL",
+    "symbol": "AAPL",
+    "name": "Apple Inc."
+  }
+]
+
+Rules:
+- Read-only node
+- No business logic
+
+────────────────────────────────────────
+NODE 2 — Fan-out per Instrument
+────────────────────────────────────────
+
+Purpose:
+- Orchestrate parallel execution per instrument.
+
+Behavior:
+- For each instrument from Node 1, spawn an independent execution path.
+- This node does not transform data.
+
+────────────────────────────────────────
+NODE 3 — Fetch Daily Bars (Yahoo Finance)
+────────────────────────────────────────
+
+Purpose:
+- Fetch historical daily OHLCV data for a single instrument.
+- Persist the raw data as the source of truth.
+
+Input:
+- instrumentId
+- symbol
+
+Behavior:
+- Fetch daily bars from Yahoo Finance chart API
+- interval = 1d
+- includePrePost = false
+- Fetch at least the last 52 trading days (preferably more if available)
+
+Raw bar schema (in memory and persisted):
+
+{
+  "instrumentId": "XNAS:AAPL",
+  "date": "2026-01-15",
+  "open": 175.20,
+  "high": 178.10,
+  "low": 174.90,
+  "close": 176.90,
+  "volume": 17258000
+}
+
+Persistence:
+- MongoDB collection: daily_bars
+- Upsert key: (instrumentId, date)
+- daily_bars is immutable historical truth
+
+Memory:
+- Keep the fetched bars in memory and pass them to the next node
+
+────────────────────────────────────────
+NODE 4 — Compute Daily Metrics
+────────────────────────────────────────
+
+Purpose:
+- Compute derived Yahoo-style metrics for a single instrument as-of date D.
+
+Input:
+- Instrument metadata
+- Historical daily bars (≤ D)
+
+Metrics to compute:
+
+Last Price:
+- last_price = close[D]
+
+Volume:
+- volume = volume[D]
+
+Rolling High / Low windows:
+- 5d window   = last 5 trading days
+- 30d window  = last ~21 trading days
+- 52w window  = last 252 trading days (if available)
+
+For each window N ∈ {5d, 30d, 52w}:
+
+high_N = max(high[D-N+1 … D])
+low_N  = min(low[D-N+1 … D])
+
+Change from period high (Yahoo convention):
+
+change_from_high_N = last_price − high_N
+change_pct_from_high_N = (last_price − high_N) / high_N * 100
+
+Rules:
+- If insufficient history exists, compute only what is possible.
+- Do not forward-fill or extrapolate.
+- No future data is allowed.
+
+Persistence:
+- MongoDB collection: daily_metrics
+- Upsert key: (instrumentId, date)
+
+daily_metrics schema:
+
+{
+  "instrumentId": "XNAS:AAPL",
+  "date": "2026-01-15",
+
+  "last_price": 176.90,
+  "volume": 17258000,
+
+  "high_5d": 180.20,
+  "low_5d": 171.80,
+  "change_from_high_5d": -3.30,
+  "change_pct_from_high_5d": -1.83,
+
+  "high_30d": 182.10,
+  "low_30d": 164.30,
+  "change_from_high_30d": -5.20,
+  "change_pct_from_high_30d": -2.85,
+
+  "high_52w": 198.23,
+  "low_52w": 124.17,
+  "change_from_high_52w": -21.33,
+  "change_pct_from_high_52w": -10.76,
+
+  "computedAt": "2026-01-16T02:00:00Z"
+}
+
+────────────────────────────────────────
+NODE 5 — Compute Leaderboards (GLOBAL)
+────────────────────────────────────────
+
+Purpose:
+- Compute cross-instrument rankings (leaderboards) for date D.
+
+Input:
+- daily_metrics for ALL instruments for date D
+
+Behavior:
+- This node operates AFTER all instruments have completed Node 4.
+- It loops over the full universe of instruments.
+
+Leaderboards to compute:
+
+For each period N ∈ {5d, 30d, 52w}:
+
+1) High leaderboard (near / above highs)
+- Rank instruments by change_pct_from_high_N DESC
+
+2) Low leaderboard (most off highs)
+- Rank instruments by change_pct_from_high_N ASC
+
+Ranking rules:
+- Only instruments with valid metrics for the period are ranked.
+- Rankings are 1-based (rank = 1 is strongest).
+
+Persistence:
+- MongoDB collection: leaderboards
+
+leaderboards schema:
+
+{
+  "date": "2026-01-15",
+  "period": "30d",
+  "type": "high",        // "high" or "low"
+  "generatedAt": "2026-01-16T02:05:00Z",
+  "items": [
+    {
+      "instrumentId": "XNAS:NVDA",
+      "symbol": "NVDA",
+      "change_pct_from_high": 4.32,
+      "rank": 1
+    },
+    {
+      "instrumentId": "XNAS:AAPL",
+      "symbol": "AAPL",
+      "change_pct_from_high": -2.85,
+      "rank": 2
+    }
+  ]
+}
+
+Leaderboards to generate per day:
+- 5d_high
+- 5d_low
+- 30d_high
+- 30d_low
+- 52w_high
+- 52w_low
+
+────────────────────────────────────────
+DESIGN CONSTRAINTS
+────────────────────────────────────────
+
+- daily_bars must be written before daily_metrics
+- daily_metrics must be written before leaderboards
+- All nodes must be idempotent
+- The flow must support re-runs for the same date
+- Leaderboards must be fully recomputable from daily_metrics
+
+────────────────────────────────────────
+END GOAL
+────────────────────────────────────────
+
+At the end of the flow, the system must contain:
+
+1) daily_bars:
+   - Raw historical OHLCV data per instrument per day
+
+2) daily_metrics:
+   - Precomputed Yahoo-style metrics per instrument per day
+
+3) leaderboards:
+   - Cross-instrument rankings for 5d, 30d, and 52w periods
+
+These datasets will power screeners, leaderboards, and analytics
+equivalent to Yahoo Finance 52-week and 30-day views.
