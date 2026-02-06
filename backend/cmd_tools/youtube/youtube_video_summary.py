@@ -294,10 +294,11 @@ class GenerateHTML(Node):
         shared["html_output"] = exec_res
         
         # Write HTML to file
-        with open(shared["output_filename"], "w") as f:
+        output_path = shared.output_path if hasattr(shared, "output_path") else shared.output_filename
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(exec_res)
         
-        logger.info(f"Generated HTML output and saved to {shared['output_filename']}")
+        logger.info(f"Generated HTML output and saved to {output_path}")
         return "default"
 
 # Create the flow

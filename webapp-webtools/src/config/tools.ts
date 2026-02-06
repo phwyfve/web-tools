@@ -88,7 +88,6 @@ export const categories: Category[] = [
       },
     ],
   },
-  ,
   {
     id: 'ai-agents',
     name: 'AI Agents',

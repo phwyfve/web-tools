@@ -7,6 +7,7 @@ interface DownloadSectionProps {
   onReset: () => void
   title?: string
   description?: string
+  label?: string
 }
 
 export default function DownloadSection({
@@ -14,7 +15,8 @@ export default function DownloadSection({
   filename,
   onReset,
   title = 'Your file is ready!',
-  description = 'Click the button below to download your processed file.'
+  description = 'Click the button below to download your processed file.',
+  label = 'Download File'
 }: DownloadSectionProps) {
   const handleDownload = async () => {
     try {
@@ -68,7 +70,7 @@ export default function DownloadSection({
             className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Download className="h-5 w-5" />
-            Download File
+            {label}
           </button>
 
           <button

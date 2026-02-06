@@ -5,6 +5,8 @@ import logging
 import yaml
 import zipfile
 import asyncio
+import os
+import tempfile
 from .utils.call_llm import call_llm
 from .utils.youtube_processor import extract_video_id
 from .youtube_video_summary import create_youtube_processor_flow
@@ -98,9 +100,15 @@ class YoutubeVideoSummary(Node):
         flow = create_youtube_processor_flow()
 
         # Initialize shared memory for the subprocess
+        output_dir = os.path.join(tempfile.gettempdir(), "webtools", "youtube")
+        os.makedirs(output_dir, exist_ok=True)
+        output_filename = f"youtube_summary_{index}_{extract_video_id(url)}.html"
+        output_path = os.path.join(output_dir, output_filename)
+
         sub_shared = {
             "url": url,
-            "output_filename": f"youtube_summary_{index}_{extract_video_id(url)}.html"
+            "output_filename": output_filename,
+            "output_path": output_path
         }
 
         # Run the sub-flow
@@ -126,21 +134,26 @@ class FinalReportGenerator(Node):
 
     async def exec(self, summaries: List[str]):
         # Generate index HTML with links to the 3 summaries
+        output_dir = os.path.join(tempfile.gettempdir(), "webtools", "youtube")
+        os.makedirs(output_dir, exist_ok=True)
         index_filename = "index.html"
+        index_path = os.path.join(output_dir, index_filename)
         links_html = "<h1>Robotics Stock - Video Summaries</h1>\n<ul>"
         for summary_file in summaries:
             links_html += f'<li><a href="{summary_file}">{summary_file}</a></li>\n'
         links_html += "</ul>"
 
-        with open(index_filename, "w", encoding="utf-8") as f:
+        with open(index_path, "w", encoding="utf-8") as f:
             f.write(links_html)
 
         # Create zip with all files
         zip_filename = "youtube_report.zip"
-        with zipfile.ZipFile(zip_filename, "w") as zipf:
-            zipf.write(index_filename)
+        zip_path = os.path.join(output_dir, zip_filename)
+        with zipfile.ZipFile(zip_path, "w") as zipf:
+            zipf.write(index_path, arcname=index_filename)
             for file in summaries:
-                zipf.write(file)
+                file_path = os.path.join(output_dir, file)
+                zipf.write(file_path, arcname=file)
 
         return zip_filename
 

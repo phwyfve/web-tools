@@ -43,6 +43,7 @@ services:
 
   # FastAPI Backend
   backend:
+    image: webtools-backend:latest
     build: 
       context: .
       dockerfile: Dockerfile
@@ -77,19 +78,35 @@ services:
       timeout: 10s
       retries: 3
 
-  # React Frontend (Production) - Temporarily disabled
-  # webapp:
-  #   build:
-  #     context: ./webapp
-  #     dockerfile: Dockerfile.prod
-  #   container_name: mongo_test_webapp
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - backend
-  #   networks:
-  #     - app-network
+  # Web app trading
+  nginx-webapp-trading:
+    image: nginx:latest
+    container_name: webapp-trading
+    restart: unless-stopped
+    ports:
+      - "8089:80"
+    volumes:
+      - ./conf.d/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../webapp-trading/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # Web app webtools
+  nginx-webapp-webtools:
+    image: nginx:latest
+    container_name: webapp-webtools
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    volumes:
+      - ./conf.d/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../webapp-webtools/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
 
 networks:
   app-network:

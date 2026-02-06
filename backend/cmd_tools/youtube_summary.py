@@ -4,6 +4,8 @@ Summarizes a YouTube video using a processing flow
 """
 
 import asyncio
+import os
+import tempfile
 from typing import Dict, Any
 
 from .youtube.utils.youtube_processor import extract_video_id
@@ -31,9 +33,15 @@ async def youtube_summary(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[s
     flow = create_youtube_processor_flow()
 
     # Initialize shared memory
+    output_dir = os.path.join(tempfile.gettempdir(), "webtools", "youtube")
+    os.makedirs(output_dir, exist_ok=True)
+    output_filename = f"youtube_summary{extract_video_id(url)}.html"
+    output_path = os.path.join(output_dir, output_filename)
+
     shared = {
         "url": url,
-        "output_filename": f"youtube_summary{extract_video_id(url)}.html"
+        "output_filename": output_filename,
+        "output_path": output_path
     }
 
     # Run the flow
@@ -42,7 +50,7 @@ async def youtube_summary(args: Dict[str, Any], db, fs: gridfs.GridFS) -> Dict[s
 
     # Upload summary to GridFS with proper file handling and error logging
     try:
-        with open(f"{shared['output_filename']}", "rb") as f:
+        with open(shared["output_path"], "rb") as f:
             summary_file_id = fs.put(
                 f.read(),
                 filename=shared["output_filename"],

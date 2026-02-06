@@ -25,6 +25,7 @@ from routes.youtube_summary import router as youtube_summary_router
 
 # Import cleanup service
 from service.cleanup_service import start_cleanup_scheduler
+from service.seed_service import start_seed_scheduler
 from core.config import settings
 
 
@@ -39,13 +40,13 @@ async def lifespan(app: FastAPI):
     await create_indexes()
     print("✓ Indexes created successfully")
     
-    # Start cleanup scheduler in the background (if enabled)
-    if getattr(settings, 'enable_cleanup_scheduler', True):
-        #cleanup_task = start_cleanup_scheduler()
-        print("🧹 Cleanup scheduler started")
+    # Start seed scheduler in the background (if enabled)
+    if getattr(settings, 'enable_seed_scheduler', True):
+        start_seed_scheduler()
+        print("🌱 Seed scheduler started")
     else:
-        print("🚫 Cleanup scheduler disabled")
-    
+        print("🚫 Seed scheduler disabled")
+
     yield
     # Shutdown (if needed)
 
@@ -56,7 +57,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),  # Console output
-        logging.FileHandler('app.log', encoding='utf-8')  # File output
+        logging.FileHandler('/tmp/app.log', encoding='utf-8')  # File output
     ]
 )
 
@@ -95,6 +96,8 @@ app.add_middleware(
         "http://localhost:3000",  # React dev server (webapp)
         "http://localhost:3001",  # React dev server (webapp-webtools)
         "http://localhost:3002",  # React dev server (webapp-trading)
+        "http://localhost:8089",  # React docker server (webapp)
+        "http://localhost:8090",  # React docker server (webapp-webtools)
     ],
     allow_credentials=True,
     allow_methods=["*"],

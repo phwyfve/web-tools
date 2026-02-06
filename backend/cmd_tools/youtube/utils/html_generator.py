@@ -128,6 +128,12 @@ if __name__ == "__main__":
             ]
         }
     ]
-    html_content = html_generator("Title 1", "https://picsum.photos/600/300?grayscale", sections_data) 
-    with open("output.html", "w") as file:
-        file.write(html_content)
+    import os
+    import tempfile
+    
+    html_content = html_generator("Title 1", "https://picsum.photos/600/300?grayscale", sections_data)
+    output_dir = os.path.join(tempfile.gettempdir(), "webtools", "youtube")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "output.html")
+    with open(output_path, "w", encoding="utf-8") as file:
+      file.write(html_content)

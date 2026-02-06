@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     cleanup_interval_minutes: int = int(os.getenv("CLEANUP_INTERVAL_MINUTES", "60"))  # Run cleanup every hour
     max_tmp_storage_mb: int = int(os.getenv("MAX_TMP_STORAGE_MB", "1000"))  # Alert if tmp storage > 1GB
     enable_cleanup_scheduler: bool = os.getenv("ENABLE_CLEANUP_SCHEDULER", "true").lower() == "true"  # Enable/disable auto cleanup
+
+    # Seed scheduler settings
+    enable_seed_scheduler: bool = os.getenv("ENABLE_SEED_SCHEDULER", "true").lower() == "true"
+    seed_check_interval_minutes: int = int(os.getenv("SEED_CHECK_INTERVAL_MINUTES", "60"))
     
     class Config:
         env_file = ".env"

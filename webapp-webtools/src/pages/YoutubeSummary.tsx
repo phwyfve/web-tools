@@ -65,6 +65,11 @@ export default function YoutubeSummary() {
         <DownloadSection
           fileId={result.summary_file_id}
           filename={result.summary_filename || 'output.html'}
+          onReset={() => {
+            setResult(null)
+            setCommandId(null)
+            setUrl('')
+          }}
           label="Download Summary (HTML)"
         />
       )}

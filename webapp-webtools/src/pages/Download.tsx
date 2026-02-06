@@ -41,7 +41,7 @@ export default function Download() {
       if (commandStatus.exit_state === 0) {
         // Success - create process result from command status
         const result: ProcessResult = {
-          id: commandStatus.id,
+          id: commandStatus.command_id,
           status: 'completed',
           createdAt: new Date().toISOString(),
           merged_file_id: state.merged_file_id,
@@ -64,7 +64,7 @@ export default function Download() {
         if (commandStatus.exit_state === 0) {
           // Success
           const result: ProcessResult = {
-            id: commandStatus.id,
+            id: commandStatus.command_id,
             status: 'completed',
             createdAt: new Date().toISOString(),
             command_status: commandStatus
