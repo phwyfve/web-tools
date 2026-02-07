@@ -8,7 +8,7 @@ function Scans() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [pageStart, setPageStart] = useState(0)
-  const [pageLimit, setPageLimit] = useState(500)
+  const [pageLimit, setPageLimit] = useState(50)
 
   const scans = {
     bullish: [
