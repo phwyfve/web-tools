@@ -74,17 +74,33 @@ def parse_nasdaq_symbol(row: dict) -> str | None:
 def parse_otherlisted_symbol(row: dict) -> str | None:
     return row.get("ACT Symbol")
 
+
+def is_special_security_name(name: str | None) -> bool:
+    if not name:
+        return False
+    lowered = name.lower()
+    keywords = ["warrant", "unit", "right", "rights"]
+    return any(k in lowered for k in keywords)
+
 def fetch_instruments_from_web() -> list[dict]:
     instruments = []
+    allowed_exchanges = {"XNAS", "XNYS"}
 
     # ---- NASDAQ LISTED ----
     nasdaq_rows = parse_pipe_file(fetch_text(NASDAQ_LISTED_URL))
     for row in nasdaq_rows:
         if row.get("Test Issue") == "Y":
             continue
+        if row.get("ETF") == "Y":
+            continue
+        if row.get("Financial Status") != "N":
+            continue
 
         symbol = parse_nasdaq_symbol(row)
         if not symbol:
+            continue
+
+        if is_special_security_name(row.get("Security Name")):
             continue
 
         instruments.append({
@@ -101,12 +117,21 @@ def fetch_instruments_from_web() -> list[dict]:
     for row in other_rows:
         if row.get("Test Issue") == "Y":
             continue
+        if row.get("ETF") == "Y":
+            continue
+        if row.get("Financial Status") != "N":
+            continue
 
         symbol = parse_otherlisted_symbol(row)
         if not symbol:
             continue
 
+        if is_special_security_name(row.get("Security Name")):
+            continue
+
         exchange = exchange_code_from_otherlisted(row.get("Exchange"))
+        if exchange not in allowed_exchanges:
+            continue
 
         instruments.append({
             "_id": f"{exchange}:{symbol}",
@@ -123,10 +148,16 @@ def fetch_instruments_from_web() -> list[dict]:
 # -----------------------------
 # Save to Mongo (USING YOUR GLOBAL DB)
 # -----------------------------
-async def save_instruments(instruments: List[Dict]):
+async def save_instruments(instruments: List[Dict], simulate: bool = False):
+    if simulate:
+        logger.info(f"[SIMU] would upsert {len(instruments)} instruments")
+        logger.info("[SIMU] no database changes performed")
+        return
+
     db = get_database()
     collection = db.instruments
     now = utc_now()
+    allowed_exchanges = ["XNAS", "XNYS"]
 
     # indexes (safe, idempotent)
     await collection.create_index(
@@ -159,6 +190,14 @@ async def save_instruments(instruments: List[Dict]):
 
     results = await asyncio.gather(*ops)
 
+    # Remove any existing instruments outside NASDAQ/NYSE or ETFs
+    await collection.delete_many({
+        "$or": [
+            {"exchange": {"$nin": allowed_exchanges}},
+            {"type": "etf"}
+        ]
+    })
+
     logger.info(f"[OK] upserted: {sum(1 for r in results if r.upserted_id)}")
     logger.info(f"[OK] modified: {sum(1 for r in results if r.modified_count)}")
     logger.info(f"[OK] total instruments: {await collection.count_documents({})}")
@@ -167,15 +206,31 @@ async def save_instruments(instruments: List[Dict]):
 # -----------------------------
 # Entry point (script / CLI)
 # -----------------------------
-async def seed_instruments():
+async def seed_instruments(simulate: bool = False):
 
     logger.info("Fetching instruments from NASDAQ Trader...")
     instruments = fetch_instruments_from_web()
     logger.info(f"Fetched {len(instruments)} instruments")
 
-    logger.info("Saving instruments to Mongo...")
-    await save_instruments(instruments)
+    if simulate:
+        logger.info("[SIMU] Saving instruments to Mongo...")
+    else:
+        logger.info("Saving instruments to Mongo...")
+    await save_instruments(instruments, simulate=simulate)
 
 
 if __name__ == "__main__":
-    asyncio.run(seed_instruments())
+    import os
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Seed instruments from NASDAQ Trader")
+    parser.add_argument(
+        "--simulate",
+        action="store_true",
+        help="Simulate only (no DB writes)"
+    )
+    args = parser.parse_args()
+
+    env_simulate = os.getenv("SIMULATE", "0") in {"1", "true", "TRUE", "yes", "YES"}
+    simulate_flag = args.simulate or env_simulate
+    asyncio.run(seed_instruments(simulate=simulate_flag))
