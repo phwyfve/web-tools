@@ -7,7 +7,7 @@ import './App.css'
 
 function App() {
   return (
-    <Router>
+    <Router basename="/webtrading">
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
