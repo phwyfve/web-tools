@@ -96,8 +96,8 @@ app.add_middleware(
         "http://localhost:3000",  # React dev server (webapp)
         "http://localhost:3001",  # React dev server (webapp-webtools)
         "http://localhost:3002",  # React dev server (webapp-trading)
-        "http://localhost:8089",  # React docker server (webapp)
         "http://localhost:8090",  # React docker server (webapp-webtools)
+        "http://localhost:8091",  # React docker server (webapp)
     ],
     allow_credentials=True,
     allow_methods=["*"],
