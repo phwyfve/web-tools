@@ -104,6 +104,22 @@ export const categories: Category[] = [
         icon: '🎬',
         color: 'text-pink-600',
       },
+      {
+        id: 'pdf-to-html',
+        name: 'PDF to HTML Summary',
+        description: 'Convert PDF content to interactive HTML with Q&A',
+        acceptedFormats: ['.pdf'],
+        icon: '📄➡️🌐',
+        color: 'text-pink-600',
+      },
+      {
+        id: 'html-summary',
+        name: 'HTML Summary Generator',
+        description: 'Create quick HTML summary with 1 question + 5 subquestions',
+        acceptedFormats: ['text'],
+        icon: '📝✨',
+        color: 'text-pink-600',
+      },
     ],
   }
 ]

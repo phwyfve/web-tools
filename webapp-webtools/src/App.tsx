@@ -13,6 +13,8 @@ import MergePdf from './pages/MergePdf'
 import MergeImages from './pages/MergeImages'
 import YoutubeSummary from './pages/YoutubeSummary'
 import XlsToPdf from './pages/XlsToPdf'
+import PdfToHtml from './pages/PdfToHtml'
+import HtmlSummary from './pages/HtmlSummary'
 import ProtectedRoute from './components/ProtectedRoute'
 
 
@@ -54,6 +56,16 @@ function App() {
             <Route path="/youtube-summary" element={
               <ProtectedRoute>
                 <YoutubeSummary />
+              </ProtectedRoute>
+            } />
+            <Route path="/pdf-to-html" element={
+              <ProtectedRoute>
+                <PdfToHtml />
+              </ProtectedRoute>
+            } />
+            <Route path="/html-summary" element={
+              <ProtectedRoute>
+                <HtmlSummary />
               </ProtectedRoute>
             } />
 

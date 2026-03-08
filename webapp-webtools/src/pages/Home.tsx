@@ -46,6 +46,10 @@ export default function Home() {
                   toolPath = '/split-pdf'
                 } else if (category.id === 'ai-agents' && tool.id === 'youtube-summary') {
                   toolPath = '/youtube-summary'
+                } else if (category.id === 'ai-agents' && tool.id === 'pdf-to-html') {
+                  toolPath = '/pdf-to-html'
+                } else if (category.id === 'ai-agents' && tool.id === 'html-summary') {
+                  toolPath = '/html-summary'
                 }
                 
                 return (

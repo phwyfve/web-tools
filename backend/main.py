@@ -22,11 +22,16 @@ from routes.files import router as files_router
 from routes.admin import router as admin_router
 from routes.trading_routes import router as trading_router
 from routes.youtube_summary import router as youtube_summary_router
+from routes.pdf_to_html import router as pdf_to_html_router
+from routes.html_summary import router as html_summary_router
+from routes.call_llm import router as call_llm_router
 
 # Import cleanup service
 from service.cleanup_service import start_cleanup_scheduler
 from service.seed_service import start_seed_scheduler
 from core.config import settings
+import os
+import tempfile
 
 
 @asynccontextmanager
@@ -51,13 +56,17 @@ async def lifespan(app: FastAPI):
     # Shutdown (if needed)
 
 
-# Configure logging
+# Configure logging with cross-platform log file path
+log_dir = os.path.join(tempfile.gettempdir(), 'webtools')
+os.makedirs(log_dir, exist_ok=True)
+log_file = os.path.join(log_dir, 'app.log')
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),  # Console output
-        logging.FileHandler('/tmp/app.log', encoding='utf-8')  # File output
+        logging.FileHandler(log_file, encoding='utf-8')  # File output
     ]
 )
 
@@ -141,6 +150,9 @@ app.include_router(merge_pdfs_router, prefix="/api", tags=["Process Management"]
 app.include_router(split_pdfs_router, prefix="/api", tags=["Process Management"])
 app.include_router(merge_images_router, prefix="/api", tags=["Process Management"])
 app.include_router(xls_to_pdf_router, prefix="/api", tags=["Process Management"])
+app.include_router(pdf_to_html_router, prefix="/api", tags=["Process Management"])
+app.include_router(html_summary_router, prefix="/api", tags=["AI Agents"])
+app.include_router(call_llm_router, prefix="/api", tags=["AI Agents"])
 app.include_router(commands_router, prefix="/api", tags=["Process Management"])
 app.include_router(files_router, prefix="/api", tags=["File Downloads"])
 app.include_router(admin_router, prefix="/api", tags=["Admin"])
