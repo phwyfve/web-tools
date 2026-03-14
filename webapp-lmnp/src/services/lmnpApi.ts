@@ -36,6 +36,8 @@ export interface LogementData {
 }
 
 export interface UsageData {
+  id: string
+  logement_id: string
   type_usage?: string // 'location' | 'location_courte_duree' | 'mixte'
   date_debut?: string
   date_fin?: string
@@ -101,7 +103,7 @@ export interface LmnpUserData {
   fiscal_year: number
   siren?: SirenData | null
   logements?: LogementData[]
-  usage?: UsageData | null
+  usage?: UsageData[]
   recettes?: RecetteData[]
   depenses?: DepenseData[]
   emprunts?: EmpruntData[]
@@ -164,15 +166,15 @@ export const lmnpApi = {
   },
 
   /**
-   * Met à jour les données d'usage
+   * Met à jour la liste des usages
    */
   updateUsage: async (
     fiscalYear: number,
-    data: Partial<UsageData>
+    usages: UsageData[]
   ): Promise<LmnpUserData> => {
     const response = await api.patch<LmnpApiResponse<LmnpUserData>>(
       `/api/lmnp/data/${fiscalYear}/usage`,
-      data
+      { usages }
     )
     return response.data.data!
   },

@@ -49,14 +49,21 @@ class LogementsUpdateRequest(BaseModel):
     logements: List[LogementItem]
 
 
-class UsageUpdateRequest(BaseModel):
-    """Request body pour mise à jour de l'usage"""
+class UsageItem(BaseModel):
+    """Un usage"""
+    id: str
+    logement_id: str
     type_usage: str | None = None
     date_debut: str | None = None
     date_fin: str | None = None
     nb_jours_location: int | None = None
     nb_jours_perso: int | None = None
     est_residence_principale: bool = False
+
+
+class UsagesUpdateRequest(BaseModel):
+    """Request body pour mise à jour des usages"""
+    usages: List[UsageItem]
 
 
 class RecetteItem(BaseModel):
@@ -194,20 +201,20 @@ async def update_logements(
 @router.patch("/lmnp/data/{fiscal_year}/usage")
 async def update_usage(
     fiscal_year: int,
-    request: UsageUpdateRequest,
+    request: UsagesUpdateRequest,
     user: User = Depends(current_active_user),
     db = Depends(get_database)
 ):
-    """Met à jour les données d'usage"""
+    """Met à jour la liste des usages"""
     manager = LmnpDataManager(db)
     
-    usage_data = request.model_dump(exclude_none=True)
+    usages = [usage.model_dump(exclude_none=True) for usage in request.usages]
     
-    data = await manager.update_usage(str(user.id), fiscal_year, usage_data)
+    data = await manager.update_usage(str(user.id), fiscal_year, usages)
     
     return {
         "success": True,
-        "message": "Données d'usage mises à jour",
+        "message": "Usages mis à jour",
         "data": data
     }
 

@@ -44,6 +44,8 @@ class LogementData(BaseModel):
 
 class UsageData(BaseModel):
     """Données d'usage du bien"""
+    id: str
+    logement_id: str
     type_usage: Optional[str] = None  # 'location', 'location_courte_duree', 'mixte'
     date_debut: Optional[str] = None
     date_fin: Optional[str] = None
@@ -114,7 +116,7 @@ class LmnpUserData(BaseModel):
     fiscal_year: int
     siren: Optional[SirenData] = None
     logements: Optional[List[LogementData]] = []
-    usage: Optional[UsageData] = None
+    usage: Optional[List[UsageData]] = []
     recettes: Optional[List[RecetteData]] = []
     depenses: Optional[List[DepenseData]] = []
     emprunts: Optional[List[EmpruntData]] = []
@@ -207,15 +209,16 @@ class LmnpDataManager:
         
         return await self.get_user_data(user_id, fiscal_year)
     
-    async def update_usage(self, user_id: str, fiscal_year: int, usage_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Met à jour les données d'usage"""
-        usage_data["updated_at"] = datetime.utcnow()
+    async def update_usage(self, user_id: str, fiscal_year: int, usages: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Met à jour la liste des usages"""
+        for usage in usages:
+            usage["updated_at"] = datetime.utcnow()
         
         result = await self.collection.update_one(
             {"user_id": user_id, "fiscal_year": fiscal_year},
             {
                 "$set": {
-                    "usage": usage_data,
+                    "usage": usages,
                     "updated_at": datetime.utcnow()
                 }
             },
