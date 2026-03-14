@@ -15,6 +15,7 @@ from gridfs import GridFS
 from bson import ObjectId
 from cmd_tools.tools_commands import COMMAND_REGISTRY
 from core.config import settings
+from core.database import init_db
 
 # Set up logging
 logging.basicConfig(
@@ -38,6 +39,11 @@ async def main():
     logger.info(f"Me_shell dispatcher started for command: {command_id}")
     
     try:
+        # Initialize database connection (this sets up the global database variable)
+        logger.info("Initializing database connection via init_db()")
+        await init_db()
+        logger.info("Database initialized successfully")
+        
         # Connect to MongoDB
         logger.info(f"Connecting to MongoDB: {settings.mongodb_url}")
         client = AsyncIOMotorClient(settings.mongodb_url)

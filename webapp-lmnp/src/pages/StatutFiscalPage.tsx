@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import PageContainer from '../components/PageContainer'
 import { Save, Loader2 } from 'lucide-react'
 import { lmnpApi, StatutFiscalData } from '../services/lmnpApi'
+import { useFiscalYear } from '../contexts/FiscalYearContext'
 
 export default function StatutFiscalPage() {
-  const currentYear = new Date().getFullYear()
+  const { fiscalYear } = useFiscalYear()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<Partial<StatutFiscalData>>({
@@ -19,12 +20,12 @@ export default function StatutFiscalPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [fiscalYear])
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const data = await lmnpApi.getData(currentYear)
+      const data = await lmnpApi.getData(fiscalYear)
       
       if (data.statut_fiscal) {
         setFormData({
@@ -62,7 +63,7 @@ export default function StatutFiscalPage() {
   const handleSave = async () => {
     try {
       setSaving(true)
-      await lmnpApi.updateStatutFiscal(currentYear, {
+      await lmnpApi.updateStatutFiscal(fiscalYear, {
         regime_fiscal: formData.regime_fiscal || undefined,
         assujetti_tva: formData.assujetti_tva,
         soumis_cfe: formData.soumis_cfe,

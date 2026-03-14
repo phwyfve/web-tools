@@ -11,6 +11,7 @@ from .XlsToPdf import xls_to_pdf
 from .pdf_to_html import pdf_to_html
 from .html_summary import html_summary
 from .call_llm_handler import call_llm_handler
+from .generate_lmnp_liasse import generate_lmnp_liasse
 
 COMMAND_REGISTRY = {
     "MergePdfs": merge_pdfs,
@@ -20,5 +21,6 @@ COMMAND_REGISTRY = {
     "youtube_summary": youtube_summary,
     "PdfToHtml": pdf_to_html,
     "HtmlSummary": html_summary,
-    "call_llm": call_llm_handler
+    "call_llm": call_llm_handler,
+    "GenerateLmnpLiasse": generate_lmnp_liasse
 }

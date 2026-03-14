@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react'
 import PageContainer from '../components/PageContainer'
 import { Save, Plus, Trash2, Loader2, Pencil } from 'lucide-react'
 import { lmnpApi, DepenseData, LogementData } from '../services/lmnpApi'
+import { useFiscalYear } from '../contexts/FiscalYearContext'
 
 const CATEGORIES = [
   { group: 'Taxes', items: [
     { value: 'taxe_fonciere', label: 'Taxe foncière' },
     { value: 'taxe_habitation', label: 'Taxe d\'habitation' },
+  ]},
+  { group: 'Emprunt', items: [
+    { value: 'interets_emprunts', label: 'Intérêts annuels des emprunts bancaires' },
   ]},
   { group: 'Assurance', items: [
     { value: 'assurance_pno', label: 'Assurances propriétaire non occupant (PNO)' },
@@ -35,7 +39,7 @@ const CATEGORIES = [
 ]
 
 export default function DepensesPage() {
-  const currentYear = new Date().getFullYear()
+  const { fiscalYear } = useFiscalYear()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [logements, setLogements] = useState<LogementData[]>([])
@@ -52,12 +56,12 @@ export default function DepensesPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [fiscalYear])
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const data = await lmnpApi.getData(currentYear)
+      const data = await lmnpApi.getData(fiscalYear)
       
       if (data.logements) {
         setLogements(data.logements)
@@ -76,7 +80,7 @@ export default function DepensesPage() {
   const saveDepenses = async (updatedDepenses: DepenseData[]) => {
     try {
       setSaving(true)
-      await lmnpApi.updateDepenses(currentYear, updatedDepenses)
+      await lmnpApi.updateDepenses(fiscalYear, updatedDepenses)
       setDepenses(updatedDepenses)
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
@@ -86,11 +90,11 @@ export default function DepensesPage() {
   }
 
   const handleAddDepense = () => {
-    if (formData.logement_id && formData.date && formData.montant && formData.categorie) {
+    if (formData.logement_id && formData.montant && formData.categorie) {
       const depenseToAdd: DepenseData = {
         id: `depense-${Date.now()}`,
         logement_id: formData.logement_id,
-        date: formData.date,
+        date: fiscalYear.toString(),
         montant: formData.montant,
         description: formData.description || undefined,
         categorie: formData.categorie,
@@ -123,11 +127,11 @@ export default function DepensesPage() {
   }
 
   const handleUpdateDepense = () => {
-    if (editingDepense && formData.logement_id && formData.date && formData.montant && formData.categorie) {
+    if (editingDepense && formData.logement_id && formData.montant && formData.categorie) {
       const updatedDepense: DepenseData = {
         ...editingDepense,
         logement_id: formData.logement_id,
-        date: formData.date,
+        date: fiscalYear.toString(),
         montant: formData.montant,
         description: formData.description || undefined,
         categorie: formData.categorie,
@@ -262,17 +266,13 @@ export default function DepensesPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Année *
+                Année
               </label>
               <input
                 type="number"
-                value={formData.date || ''}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                placeholder="2026"
-                min="2000"
-                max="2100"
-                required
+                value={fiscalYear}
+                disabled
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 cursor-not-allowed"
               />
             </div>
 

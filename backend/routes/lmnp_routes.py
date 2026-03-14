@@ -3,10 +3,12 @@ LMNP Routes
 Routes FastAPI pour la gestion des données LMNP (Location Meublée Non Professionnelle)
 """
 
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from core.auth import User, current_active_user
 from core.database import get_database
 from cmd_accountant.lmnp_data_manager import LmnpDataManager
+from shell.command_manager import create_command, process_command
 from typing import Dict, Any, List
 from pydantic import BaseModel
 from datetime import datetime
@@ -357,6 +359,14 @@ async def get_validation_recap(
     manager = LmnpDataManager(db)
     recap = await manager.get_validation_recap(str(user.id), fiscal_year)
     
+    # Log de la structure complète pour développement du moteur comptable
+    import json
+    print("\n" + "="*80)
+    print(f"STRUCTURE DONNÉES LMNP - Année {fiscal_year} - User {user.id}")
+    print("="*80)
+    print(json.dumps(recap, indent=2, default=str, ensure_ascii=False))
+    print("="*80 + "\n")
+    
     return {
         "success": True,
         "data": recap
@@ -420,6 +430,74 @@ async def list_user_years(
     """Liste toutes les années fiscales disponibles pour l'utilisateur connecté"""
     manager = LmnpDataManager(db)
     years = await manager.list_user_years(str(user.id))
+    
+    return {
+        "success": True,
+        "years": years
+    }
+
+
+@router.post("/lmnp/data/{fiscal_year}/generate-liasse")
+async def generate_liasse_endpoint(
+    fiscal_year: int,
+    user: User = Depends(current_active_user)
+):
+    """
+    Lance la génération de la liasse fiscale LMNP pour l'année donnée
+    
+    Steps:
+    1. Créer la commande GenerateLmnpLiasse avec user_id et fiscal_year
+    2. Démarrer le traitement asynchrone
+    3. Retourner command_id pour polling
+    """
+    try:
+        command_id = await create_command(
+            shell_command="GenerateLmnpLiasse",
+            args={
+                "user_id": str(user.id),
+                "fiscal_year": fiscal_year
+            }
+        )
+        
+        # Start processing asynchronously
+        asyncio.create_task(process_command(command_id))
+        
+        return {
+            "success": True,
+            "command_id": command_id,
+            "message": f"Génération de la liasse fiscale {fiscal_year} démarrée"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la création de la commande: {str(e)}"
+        )
+
+
+@router.get("/lmnp/data/{fiscal_year}/liasse")
+async def get_generated_liasse(
+    fiscal_year: int,
+    user: User = Depends(current_active_user),
+    db = Depends(get_database)
+):
+    """Récupère la dernière liasse fiscale générée pour l'année donnée"""
+    liasse_doc = await db.lmnp_liasses.find_one({
+        "user_id": str(user.id),
+        "fiscal_year": fiscal_year
+    })
+    
+    if not liasse_doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Aucune liasse fiscale trouvée pour l'année {fiscal_year}"
+        )
+    
+    return {
+        "success": True,
+        "data": liasse_doc["liasse"],
+        "generated_at": liasse_doc.get("generated_at")
+    }
     
     return {
         "success": True,

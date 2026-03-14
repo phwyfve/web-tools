@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import PageContainer from '../components/PageContainer'
 import { Save, Plus, Trash2, Loader2, Pencil } from 'lucide-react'
 import { lmnpApi, EmpruntData, LogementData } from '../services/lmnpApi'
+import { useFiscalYear } from '../contexts/FiscalYearContext'
 
 export default function EmpruntsPage() {
-  const currentYear = new Date().getFullYear()
+  const { fiscalYear } = useFiscalYear()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [logements, setLogements] = useState<LogementData[]>([])
@@ -23,12 +24,12 @@ export default function EmpruntsPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [fiscalYear])
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const data = await lmnpApi.getData(currentYear)
+      const data = await lmnpApi.getData(fiscalYear)
       
       if (data.logements) {
         setLogements(data.logements)
@@ -49,7 +50,7 @@ export default function EmpruntsPage() {
   const saveEmprunts = async (updatedEmprunts: EmpruntData[]) => {
     try {
       setSaving(true)
-      await lmnpApi.updateEmprunts(currentYear, updatedEmprunts)
+      await lmnpApi.updateEmprunts(fiscalYear, updatedEmprunts)
       setEmprunts(updatedEmprunts)
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import PageContainer from '../components/PageContainer'
 import { Save, Loader2 } from 'lucide-react'
 import { lmnpApi, SirenData } from '../services/lmnpApi'
+import { useFiscalYear } from '../contexts/FiscalYearContext'
 
 export default function SirenPage() {
-  const currentYear = new Date().getFullYear()
+  const { fiscalYear } = useFiscalYear()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<SirenData>({
@@ -22,12 +23,12 @@ export default function SirenPage() {
   // Charger les données au montage du composant
   useEffect(() => {
     loadData()
-  }, [])
+  }, [fiscalYear])
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const data = await lmnpApi.getData(currentYear)
+      const data = await lmnpApi.getData(fiscalYear)
       
       if (data.siren) {
         setFormData({
@@ -54,7 +55,7 @@ export default function SirenPage() {
     
     try {
       setSaving(true)
-      await lmnpApi.updateSiren(currentYear, formData)
+      await lmnpApi.updateSiren(fiscalYear, formData)
       
       // Feedback visuel de succès (optionnel: ajouter un toast)
       console.log('Données SIREN sauvegardées avec succès')
