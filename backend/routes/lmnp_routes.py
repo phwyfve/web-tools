@@ -42,6 +42,7 @@ class LogementItem(BaseModel):
     nb_pieces: int | None = None
     date_acquisition: str | None = None
     prix_acquisition: float | None = None
+    valeur_estimee: float | None = None
 
 
 class LogementsUpdateRequest(BaseModel):

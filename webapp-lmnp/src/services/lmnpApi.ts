@@ -32,6 +32,7 @@ export interface LogementData {
   nb_pieces?: number
   date_acquisition?: string
   prix_acquisition?: number
+  valeur_estimee?: number
   updated_at?: string
 }
 

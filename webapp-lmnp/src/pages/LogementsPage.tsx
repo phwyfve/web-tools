@@ -19,6 +19,7 @@ export default function LogementsPage() {
     nb_pieces: undefined,
     date_acquisition: '',
     prix_acquisition: undefined,
+    valeur_estimee: undefined,
   })
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function LogementsPage() {
         nb_pieces: formData.nb_pieces,
         date_acquisition: formData.date_acquisition,
         prix_acquisition: formData.prix_acquisition,
+        valeur_estimee: formData.valeur_estimee,
       }
       
       const updatedLogements = [...logements, logementToAdd]
@@ -78,6 +80,7 @@ export default function LogementsPage() {
         nb_pieces: undefined,
         date_acquisition: '',
         prix_acquisition: undefined,
+        valeur_estimee: undefined,
       })
       setShowForm(false)
     }
@@ -94,6 +97,7 @@ export default function LogementsPage() {
       nb_pieces: logement.nb_pieces,
       date_acquisition: logement.date_acquisition,
       prix_acquisition: logement.prix_acquisition,
+      valeur_estimee: logement.valeur_estimee,
     })
     setShowForm(true)
   }
@@ -110,6 +114,7 @@ export default function LogementsPage() {
         nb_pieces: formData.nb_pieces,
         date_acquisition: formData.date_acquisition,
         prix_acquisition: formData.prix_acquisition,
+        valeur_estimee: formData.valeur_estimee,
       }
       
       const updatedLogements = logements.map(l => 
@@ -126,6 +131,7 @@ export default function LogementsPage() {
         nb_pieces: undefined,
         date_acquisition: '',
         prix_acquisition: undefined,
+        valeur_estimee: undefined,
       })
       setEditingLogement(null)
       setShowForm(false)
@@ -142,6 +148,7 @@ export default function LogementsPage() {
       nb_pieces: undefined,
       date_acquisition: '',
       prix_acquisition: undefined,
+      valeur_estimee: undefined,
     })
     setEditingLogement(null)
     setShowForm(false)
@@ -283,6 +290,19 @@ export default function LogementsPage() {
                 onChange={(e) => setFormData({ ...formData, prix_acquisition: e.target.value ? parseFloat(e.target.value) : undefined })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
                 placeholder="150000"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Valeur estimée (€)
+              </label>
+              <input
+                type="number"
+                value={formData.valeur_estimee || ''}
+                onChange={(e) => setFormData({ ...formData, valeur_estimee: e.target.value ? parseFloat(e.target.value) : undefined })}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                placeholder="180000"
               />
             </div>
           </div>

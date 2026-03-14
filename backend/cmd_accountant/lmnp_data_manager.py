@@ -39,6 +39,7 @@ class LogementData(BaseModel):
     nb_pieces: Optional[int] = None
     date_acquisition: Optional[str] = None
     prix_acquisition: Optional[float] = None
+    valeur_estimee: Optional[float] = None
     updated_at: Optional[datetime] = None
 
 

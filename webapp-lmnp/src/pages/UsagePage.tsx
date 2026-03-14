@@ -34,8 +34,10 @@ export default function UsagePage() {
         setLogements(data.logements)
       }
       
-      if (data.usage) {
+      if (data.usage && Array.isArray(data.usage)) {
         setUsages(data.usage)
+      } else {
+        setUsages([])
       }
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error)
@@ -61,9 +63,9 @@ export default function UsagePage() {
       const usageToAdd: UsageData = {
         id: `usage-${Date.now()}`,
         logement_id: formData.logement_id || '',
-        type_usage: formData.type_usage,
-        date_debut: formData.date_debut,
-        date_fin: formData.date_fin,
+        type_usage: formData.type_usage || undefined,
+        date_debut: formData.date_debut || undefined,
+        date_fin: formData.date_fin || undefined,
         nb_jours_location: formData.nb_jours_location,
         nb_jours_perso: formData.nb_jours_perso,
         est_residence_principale: formData.est_residence_principale,
@@ -104,9 +106,9 @@ export default function UsagePage() {
       const updatedUsage: UsageData = {
         ...editingUsage,
         logement_id: formData.logement_id || '',
-        type_usage: formData.type_usage,
-        date_debut: formData.date_debut,
-        date_fin: formData.date_fin,
+        type_usage: formData.type_usage || undefined,
+        date_debut: formData.date_debut || undefined,
+        date_fin: formData.date_fin || undefined,
         nb_jours_location: formData.nb_jours_location,
         nb_jours_perso: formData.nb_jours_perso,
         est_residence_principale: formData.est_residence_principale,
@@ -213,7 +215,7 @@ export default function UsagePage() {
                 required
               >
                 <option value="">Sélectionner un type...</option>
-                <option value="location">Location classique</option>
+                <option value="location">Location meublée classique</option>
                 <option value="location_courte_duree">Location courte durée</option>
                 <option value="mixte">Mixte</option>
               </select>
@@ -353,7 +355,7 @@ export default function UsagePage() {
                 {usage.type_usage && (
                   <p className="text-gray-600 dark:text-gray-400">
                     <span className="font-medium">Type:</span>{' '}
-                    {usage.type_usage === 'location' && 'Location classique'}
+                    {usage.type_usage === 'location' && 'Location meublée classique'}
                     {usage.type_usage === 'location_courte_duree' && 'Location courte durée'}
                     {usage.type_usage === 'mixte' && 'Mixte'}
                   </p>
