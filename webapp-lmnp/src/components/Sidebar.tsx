@@ -10,7 +10,8 @@ import {
   FileText, 
   Settings,
   HelpCircle,
-  Building2
+  Building2,
+  CheckSquare
 } from 'lucide-react'
 
 const menuItems = [
@@ -23,6 +24,7 @@ const menuItems = [
   { path: '/emprunts', label: 'Emprunts', icon: CreditCard },
   { path: '/oga', label: 'OGA', icon: FileText },
   { path: '/statut-fiscal', label: 'Statut fiscal et social', icon: Settings },
+  { path: '/validation-recap', label: 'Validation et Récap', icon: CheckSquare },
 ]
 
 export default function Sidebar() {

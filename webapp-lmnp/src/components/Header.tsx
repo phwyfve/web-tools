@@ -1,11 +1,13 @@
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useFiscalYear } from '../contexts/FiscalYearContext'
 import { Moon, Sun, LogOut, User } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 
 export default function Header() {
   const { user, logout } = useAuth()
   const { isDarkMode, toggleDarkMode } = useTheme()
+  const { fiscalYear, setFiscalYear, availableYears } = useFiscalYear()
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -22,13 +24,33 @@ export default function Header() {
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between px-6 py-4">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
-            Bienvenue, {user?.name}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Gérez vos locations meublées non professionnelles
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <p className="text-lg font-medium text-gray-800 dark:text-white">
+              Gérez vos locations meublées non professionnelles
+            </p>
+          </div>
+
+          <div className="border-l border-gray-300 dark:border-gray-600 h-12"></div>
+
+          {/* Fiscal Year Selector */}
+          <div>
+            <label htmlFor="fiscalYear" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              Année fiscale
+            </label>
+            <select
+              id="fiscalYear"
+              value={fiscalYear}
+              onChange={(e) => setFiscalYear(parseInt(e.target.value))}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 font-semibold"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center gap-4">

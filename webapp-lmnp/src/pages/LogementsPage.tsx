@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import PageContainer from '../components/PageContainer'
 import { Save, Plus, Trash2, Loader2, Pencil } from 'lucide-react'
 import { lmnpApi, LogementData } from '../services/lmnpApi'
+import { useFiscalYear } from '../contexts/FiscalYearContext'
 
 export default function LogementsPage() {
-  const currentYear = new Date().getFullYear()
+  const { fiscalYear } = useFiscalYear()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [logements, setLogements] = useState<LogementData[]>([])
@@ -24,12 +25,12 @@ export default function LogementsPage() {
 
   useEffect(() => {
     loadData()
-  }, [])
+  }, [fiscalYear])
 
   const loadData = async () => {
     try {
       setLoading(true)
-      const data = await lmnpApi.getData(currentYear)
+      const data = await lmnpApi.getData(fiscalYear)
       
       if (data.logements) {
         setLogements(data.logements)
@@ -44,7 +45,7 @@ export default function LogementsPage() {
   const saveLogements = async (updatedLogements: LogementData[]) => {
     try {
       setSaving(true)
-      await lmnpApi.updateLogements(currentYear, updatedLogements)
+      await lmnpApi.updateLogements(fiscalYear, updatedLogements)
       setLogements(updatedLogements)
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error)
@@ -299,6 +300,7 @@ export default function LogementsPage() {
               </label>
               <input
                 type="number"
+                step="0.01"
                 value={formData.valeur_estimee || ''}
                 onChange={(e) => setFormData({ ...formData, valeur_estimee: e.target.value ? parseFloat(e.target.value) : undefined })}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"

@@ -90,7 +90,9 @@ export interface OgaData {
 }
 
 export interface StatutFiscalData {
-  regime_fiscal?: string // 'reel' | 'micro_bic'
+  regime_fiscal?: string // 'reel_simplifie' | 'reel_normal' | 'micro_bic'
+  assujetti_tva?: boolean
+  soumis_cfe?: boolean
   option_amortissement?: boolean
   duree_amortissement?: number
   adherent_cga?: boolean
@@ -102,6 +104,7 @@ export interface LmnpUserData {
   _id?: string
   user_id: string
   fiscal_year: number
+  statut_declaration?: string // 'en_saisie' | 'transmise' | 'validee'
   siren?: SirenData | null
   logements?: LogementData[]
   usage?: UsageData[]
@@ -114,6 +117,29 @@ export interface LmnpUserData {
   updated_at?: string
   is_complete?: boolean
   version?: number
+}
+
+export interface ValidationRecapData {
+  statut_declaration: string
+  is_valid: boolean
+  validations: {
+    has_logement: boolean
+    has_usage: boolean
+    has_recettes: boolean
+    has_depenses: boolean
+    has_statut_fiscal: boolean
+  }
+  statistiques: {
+    nb_logements: number
+    nb_usages: number
+    nb_recettes: number
+    nb_depenses: number
+    nb_emprunts: number
+    total_recettes: number
+    total_depenses: number
+    resultat: number
+  }
+  data: LmnpUserData
 }
 
 export interface LmnpApiResponse<T = any> {
@@ -246,6 +272,26 @@ export const lmnpApi = {
     const response = await api.patch<LmnpApiResponse<LmnpUserData>>(
       `/api/lmnp/data/${fiscalYear}/statut-fiscal`,
       data
+    )
+    return response.data.data!
+  },
+
+  /**
+   * Récupère le récapitulatif de validation
+   */
+  getValidationRecap: async (fiscalYear: number): Promise<ValidationRecapData> => {
+    const response = await api.get<LmnpApiResponse<ValidationRecapData>>(
+      `/api/lmnp/data/${fiscalYear}/validation`
+    )
+    return response.data.data!
+  },
+
+  /**
+   * Transmet la déclaration
+   */
+  transmettreDeclaration: async (fiscalYear: number): Promise<LmnpUserData> => {
+    const response = await api.post<LmnpApiResponse<LmnpUserData>>(
+      `/api/lmnp/data/${fiscalYear}/transmettre`
     )
     return response.data.data!
   },

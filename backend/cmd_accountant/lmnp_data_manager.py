@@ -103,7 +103,9 @@ class OgaData(BaseModel):
 
 class StatutFiscalData(BaseModel):
     """Données de statut fiscal"""
-    regime_fiscal: Optional[str] = None  # 'reel', 'micro_bic'
+    regime_fiscal: Optional[str] = None  # 'reel_simplifie', 'reel_normal', 'micro_bic'
+    assujetti_tva: Optional[bool] = False
+    soumis_cfe: Optional[bool] = True
     option_amortissement: Optional[bool] = False
     duree_amortissement: Optional[int] = None
     adherent_cga: Optional[bool] = False
@@ -115,6 +117,7 @@ class LmnpUserData(BaseModel):
     """Structure complète des données LMNP pour un utilisateur"""
     user_id: str
     fiscal_year: int
+    statut_declaration: Optional[str] = "en_saisie"  # 'en_saisie', 'transmise', 'validee'
     siren: Optional[SirenData] = None
     logements: Optional[List[LogementData]] = []
     usage: Optional[List[UsageData]] = []
@@ -155,6 +158,7 @@ class LmnpDataManager:
             new_data = {
                 "user_id": user_id,
                 "fiscal_year": fiscal_year,
+                "statut_declaration": "en_saisie",
                 "siren": None,
                 "logements": [],
                 "usage": None,
@@ -321,6 +325,76 @@ class LmnpDataManager:
         Exporte toutes les données au format JSON pour génération de la liasse fiscale.
         Identique à get_user_data mais indique l'intention d'export.
         """
+        return await self.get_user_data(user_id, fiscal_year)
+    
+    async def get_validation_recap(self, user_id: str, fiscal_year: int) -> Dict[str, Any]:
+        """
+        Récupère un récapitulatif avec validations et calculs pour la page de validation.
+        """
+        data = await self.get_user_data(user_id, fiscal_year)
+        
+        # Calculs
+        total_recettes = sum(r.get("montant", 0) for r in data.get("recettes", []))
+        total_depenses = sum(d.get("montant", 0) for d in data.get("depenses", []))
+        resultat = total_recettes - total_depenses
+        
+        nb_logements = len(data.get("logements", []))
+        nb_usages = len(data.get("usage", []))
+        nb_recettes = len(data.get("recettes", []))
+        nb_depenses = len(data.get("depenses", []))
+        nb_emprunts = len(data.get("emprunts", []))
+        
+        # Validations
+        validations = {
+            "has_logement": nb_logements > 0,
+            "has_usage": nb_usages > 0,
+            "has_recettes": nb_recettes > 0,
+            "has_depenses": nb_depenses > 0,
+            "has_statut_fiscal": data.get("statut_fiscal") is not None and data.get("statut_fiscal", {}).get("regime_fiscal") is not None
+        }
+        
+        is_valid = all([
+            validations["has_logement"],
+            validations["has_usage"],
+            validations["has_recettes"],
+            validations["has_depenses"],
+            validations["has_statut_fiscal"]
+        ])
+        
+        # Statut de la déclaration
+        statut_declaration = data.get("statut_declaration", "en_saisie")
+        
+        return {
+            "statut_declaration": statut_declaration,
+            "is_valid": is_valid,
+            "validations": validations,
+            "statistiques": {
+                "nb_logements": nb_logements,
+                "nb_usages": nb_usages,
+                "nb_recettes": nb_recettes,
+                "nb_depenses": nb_depenses,
+                "nb_emprunts": nb_emprunts,
+                "total_recettes": total_recettes,
+                "total_depenses": total_depenses,
+                "resultat": resultat
+            },
+            "data": data
+        }
+    
+    async def transmettre_declaration(self, user_id: str, fiscal_year: int) -> Dict[str, Any]:
+        """
+        Transmet la déclaration (change le statut à 'transmise').
+        """
+        result = await self.collection.update_one(
+            {"user_id": user_id, "fiscal_year": fiscal_year},
+            {
+                "$set": {
+                    "statut_declaration": "transmise",
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
         return await self.get_user_data(user_id, fiscal_year)
     
     async def delete_user_data(self, user_id: str, fiscal_year: int) -> bool:

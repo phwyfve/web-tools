@@ -126,6 +126,8 @@ class OgaUpdateRequest(BaseModel):
 class StatutFiscalUpdateRequest(BaseModel):
     """Request body pour mise à jour du statut fiscal"""
     regime_fiscal: str | None = None
+    assujetti_tva: bool = False
+    soumis_cfe: bool = True
     option_amortissement: bool = False
     duree_amortissement: int | None = None
     adherent_cga: bool = False
@@ -341,6 +343,49 @@ async def export_lmnp_data(
         "success": True,
         "fiscal_year": fiscal_year,
         "exported_at": datetime.utcnow().isoformat(),
+        "data": data
+    }
+
+
+@router.get("/lmnp/data/{fiscal_year}/validation")
+async def get_validation_recap(
+    fiscal_year: int,
+    user: User = Depends(current_active_user),
+    db = Depends(get_database)
+):
+    """Récupère le récapitulatif avec validations et calculs"""
+    manager = LmnpDataManager(db)
+    recap = await manager.get_validation_recap(str(user.id), fiscal_year)
+    
+    return {
+        "success": True,
+        "data": recap
+    }
+
+
+@router.post("/lmnp/data/{fiscal_year}/transmettre")
+async def transmettre_declaration(
+    fiscal_year: int,
+    user: User = Depends(current_active_user),
+    db = Depends(get_database)
+):
+    """Transmet la déclaration (change le statut)"""
+    manager = LmnpDataManager(db)
+    
+    # Vérifier que tout est valide avant de transmettre
+    recap = await manager.get_validation_recap(str(user.id), fiscal_year)
+    
+    if not recap.get("is_valid"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La déclaration ne peut pas être transmise. Certaines informations sont manquantes."
+        )
+    
+    data = await manager.transmettre_declaration(str(user.id), fiscal_year)
+    
+    return {
+        "success": True,
+        "message": "Déclaration transmise avec succès",
         "data": data
     }
 
