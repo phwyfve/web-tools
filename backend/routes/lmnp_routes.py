@@ -34,6 +34,7 @@ class SirenUpdateRequest(BaseModel):
 class LogementItem(BaseModel):
     """Un logement"""
     id: str
+    nom: str
     adresse: str
     code_postal: str | None = None
     ville: str | None = None
