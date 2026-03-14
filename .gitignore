@@ -210,3 +210,4 @@ marimo/_lsp/
 __marimo__/
 backend/cmd_tools/youtube/utils/call_llm.py
 /winforms-trading
+/webapp-lmnp/_maquette_lmnp

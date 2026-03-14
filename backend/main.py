@@ -25,6 +25,7 @@ from routes.youtube_summary import router as youtube_summary_router
 from routes.pdf_to_html import router as pdf_to_html_router
 from routes.html_summary import router as html_summary_router
 from routes.call_llm import router as call_llm_router
+from routes.lmnp_routes import router as lmnp_router
 
 # Import cleanup service
 from service.cleanup_service import start_cleanup_scheduler
@@ -105,6 +106,8 @@ app.add_middleware(
         "http://localhost:3000",  # React dev server (webapp)
         "http://localhost:3001",  # React dev server (webapp-webtools)
         "http://localhost:3002",  # React dev server (webapp-trading)
+        "http://localhost:5173",  # Vite dev server (webapp-lmnp / webapp-webtools)
+        "http://localhost:5174",  # Vite dev server (alternative port)
         "http://localhost:8090",  # React docker server (webapp-webtools)
         "http://localhost:8091",  # React docker server (webapp)
     ],
@@ -157,6 +160,7 @@ app.include_router(commands_router, prefix="/api", tags=["Process Management"])
 app.include_router(files_router, prefix="/api", tags=["File Downloads"])
 app.include_router(admin_router, prefix="/api", tags=["Admin"])
 app.include_router(trading_router, prefix="/api", tags=["Trading"])
+app.include_router(lmnp_router, prefix="/api", tags=["LMNP"])
 
 @app.get("/")
 async def root():
