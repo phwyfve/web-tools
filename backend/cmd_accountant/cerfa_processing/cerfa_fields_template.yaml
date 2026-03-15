@@ -1,0 +1,160 @@
+# ============================================================================
+# Template YAML pour définir les champs des formulaires Cerfa
+# ============================================================================
+#
+# Ce fichier définit les mappings entre :
+# - Les labels à rechercher dans les PDF Cerfa
+# - Les champs du modèle LMNP (lmnp_data_manager.py)
+# - La position relative de la zone de saisie
+#
+# Structure:
+#   cerfas:
+#     - cerfa_code: Code du formulaire (ex: "2031")
+#       cerfa_filename: Nom du fichier PDF template
+#       description: Description du formulaire
+#       pages:
+#         - page_number: Numéro de page (1-indexed)
+#           section: Nom de la section (pour organisation)
+#           fields:
+#             - label_search: Texte exact à rechercher dans le PDF
+#               field_path: Chemin vers le champ dans le modèle LMNP
+#               field_direction: Position de la case vide par rapport au label
+#               field_width: Largeur approximative de la zone (en points)
+#               field_type: Type de données (text, number, currency, date, checkbox)
+#               required: Champ obligatoire (true/false)
+#               computed: Valeur calculée automatiquement (true/false)
+#
+# Valeurs possibles pour field_direction:
+#   - right: Zone de saisie à droite du label
+#   - below: Zone de saisie en dessous du label
+#   - right_aligned: Zone alignée à droite sur la même ligne
+#
+# Valeurs possibles pour field_type:
+#   - text: Texte libre
+#   - number: Nombre entier
+#   - currency: Montant en euros
+#   - date: Date (format JJ/MM/AAAA)
+#   - checkbox: Case à cocher
+#   - percentage: Pourcentage
+# ============================================================================
+
+fiscal_year: 2026
+template_directory: "_templace_cerfa_2026"
+
+cerfas:
+  # ==========================================================================
+  # CERFA 2031 - BILAN SIMPLIFIÉ
+  # ==========================================================================
+  - cerfa_code: "2031"
+    cerfa_filename: "2031-sd_5396.pdf"
+    description: "Bilan simplifié (régime réel simplifié)"
+    
+    pages:
+      # ------------------------------------------------------------------------
+      # PAGE 1 : IDENTIFICATION
+      # ------------------------------------------------------------------------
+      - page_number: 1
+        section: "identification"
+        fields:
+          - label_search: "Exercice ouvert le"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            default_value: "01/01/2025"
+
+          - label_search: "et clos le"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            default_value: "31/12/2025"
+            
+          - label_search: "Régime \"simplifié d'imposition\""
+            field_path: ""
+            field_direction: "right"
+            field_type: "checkbox"
+            required: true
+            computed: true
+
+          - label_search: "Option pour la comptabilité super-simplifiée"
+            field_path: ""
+            field_direction: "right"
+            field_type: "checkbox"
+            required: true
+            default_value: "true"
+            
+          - label_search: "Dénomination de l'entreprise :"
+            field_path: "{siren.denomination}"
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+
+          - label_search: "Adresse de l'entreprise l'entreprise :"
+            field_path: "{siren.adresse} {siren.code_postal} {siren.ville}"
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+
+          - label_search: "Mél :"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+
+          - label_search: "Téléphone :"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+
+          - label_search: "SIREN"
+            field_path: "{siren.numero}"
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+
+          - label_search: "Préciser l'ancienne adresse en cas de changement :"
+            field_path: "{siren.ancienne_adresse}"
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+            
+          - label_search: "Activités exercées (souligner l'activité principale) :"
+            field_path: ""
+            field_direction: "below"
+            field_type: "text"
+            required: true
+            default_value: "Location meublée non professionnelle"
+
+          - label_search: "3 Total"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+            default_value: "0"
+
+          - label_search: "4 Bénéfice imposable"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+            default_value: "0"
+
+          - label_search: "7 BIC non professionnels"
+            field_path: ""
+            field_direction: "right"
+            field_type: "text"
+            required: true
+            computed: true
+            default_value: "0"
+            
+            

@@ -28,6 +28,7 @@ class SirenUpdateRequest(BaseModel):
     nom: str | None = None
     pays_residence: str | None = None
     adresse: str | None = None
+    ancienne_adresse: str | None = None
     code_postal: str | None = None
     ville: str | None = None
     date_creation: str | None = None
@@ -472,6 +473,35 @@ async def generate_liasse_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erreur lors de la création de la commande: {str(e)}"
+        )
+
+
+@router.post("/lmnp/data/{fiscal_year}/generate-liasse-direct")
+async def generate_liasse_endpoint_direct(
+    fiscal_year: int,
+    user: User = Depends(current_active_user)
+):
+    """
+    Génère la liasse fiscale directement (sans commande asynchrone)
+    Pour le debug et les tests
+    """
+    try:
+        from cmd_accountant.flow_lmnp_liasse import generate_liasse_for_user
+        from pathlib import Path
+        
+        # Définir le dossier de sortie
+        output_dir = Path("/tmp") / "liasse_output" / f"liasse_{fiscal_year}_{user.id}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Exécuter le flow directement
+        result = await generate_liasse_for_user(str(user.id), fiscal_year, str(output_dir))
+        
+        return result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la génération: {str(e)}"
         )
 
 

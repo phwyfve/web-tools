@@ -1,0 +1,16 @@
+# Requirements pour le module cerfa_preprocessing
+# Module de remplissage automatique des formulaires Cerfa PDF
+
+# PyMuPDF - Manipulation de PDF (lecture, écriture, recherche de texte)
+# S'importe comme "import fitz"
+pymupdf>=1.23.0
+
+# PyYAML - Lecture des fichiers de configuration YAML
+pyyaml>=6.0
+
+# Requests - Pour les tests HTTP
+requests>=2.31.0
+
+# Caskada - Framework de flow pour orchestration
+# (Utilisé par le reste du projet LMNP)
+caskada>=0.1.0

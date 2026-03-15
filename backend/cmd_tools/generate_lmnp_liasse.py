@@ -1,6 +1,6 @@
 """
 GenerateLmnpLiasse command handler
-Generates fiscal liasse from LMNP user data using Caskada flow
+Generates fiscal liasse PDF from LMNP user data using Caskada flow
 """
 
 import asyncio
@@ -8,12 +8,13 @@ import json
 import logging
 from typing import Dict, Any
 from bson import ObjectId
+from pathlib import Path
 
 # Import the flow from cmd_accountant
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from cmd_accountant.flow_lmnp_liasse import generate_liasse_json_only
+from cmd_accountant.flow_lmnp_liasse import generate_liasse_for_user
 
 logger = logging.getLogger('GenerateLmnpLiasse')
 
@@ -45,17 +46,22 @@ async def generate_lmnp_liasse(args: Dict[str, Any], db, fs) -> Dict[str, Any]:
     logger.info(f"Starting LMNP liasse generation for user {user_id}, year {fiscal_year}")
     
     try:
-        # Execute the Caskada flow to generate liasse
-        liasse = await generate_liasse_json_only(user_id, fiscal_year)
+        # Define output directory in /tmp (writable in Docker)
+        output_dir = Path("/tmp") / "liasse_output" / f"liasse_{fiscal_year}_{user_id}"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Execute the Caskada flow to generate liasse PDFs
+        result = await generate_liasse_for_user(user_id, fiscal_year, str(output_dir))
         
         logger.info(f"Successfully generated liasse for user {user_id}, year {fiscal_year}")
         
-        # Store the liasse in MongoDB for future reference
+        # Store the result in MongoDB for future reference
         liasse_doc = {
             "user_id": user_id,
             "fiscal_year": fiscal_year,
-            "liasse": liasse,
-            "generated_at": liasse["meta"]["generated_at"]
+            "cerfa_2031_path": result.get("cerfa_2031"),
+            "success": result.get("success"),
+            "generated_at": None  # Could add timestamp if needed
         }
         
         await db.lmnp_liasses.update_one(
@@ -64,17 +70,15 @@ async def generate_lmnp_liasse(args: Dict[str, Any], db, fs) -> Dict[str, Any]:
             upsert=True
         )
         
-        logger.info(f"Liasse stored in database for user {user_id}, year {fiscal_year}")
+        logger.info(f"Liasse metadata stored in database for user {user_id}, year {fiscal_year}")
         
         # Return summary for stdout
         return {
             "user_id": user_id,
             "fiscal_year": fiscal_year,
-            "resultat_net": liasse["formulaire_2031"]["compte_resultat"]["resultat_net"],
-            "total_actif": liasse["formulaire_2031"]["bilan_actif"]["total_actif"],
-            "total_passif": liasse["formulaire_2031"]["bilan_passif"]["total_passif"],
-            "bilan_equilibre": liasse["formulaire_2031"]["bilan_passif"]["total_passif"] == liasse["formulaire_2031"]["bilan_actif"]["total_actif"],
-            "liasse_id": f"{user_id}_{fiscal_year}"
+            "success": result.get("success"),
+            "cerfa_2031": result.get("cerfa_2031"),
+            "output_dir": str(output_dir)
         }
         
     except Exception as e:

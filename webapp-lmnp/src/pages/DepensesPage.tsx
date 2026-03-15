@@ -8,6 +8,7 @@ const CATEGORIES = [
   { group: 'Taxes', items: [
     { value: 'taxe_fonciere', label: 'Taxe foncière' },
     { value: 'taxe_habitation', label: 'Taxe d\'habitation' },
+    { value: 'cfe', label: 'Cotisation Foncière des Entreprises (CFE)' },
   ]},
   { group: 'Emprunt', items: [
     { value: 'interets_emprunts', label: 'Intérêts annuels des emprunts bancaires' },

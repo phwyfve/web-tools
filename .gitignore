@@ -211,3 +211,5 @@ __marimo__/
 backend/cmd_tools/youtube/utils/call_llm.py
 /winforms-trading
 /webapp-lmnp/_maquette_lmnp
+backend/cmd_accountant/cerfa_processing/cerfa_2031_test.pdf
+webapp-lmnp/_liasses_exemple/Liasse_fiscale_2024.pdf
