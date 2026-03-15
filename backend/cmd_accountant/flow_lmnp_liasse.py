@@ -80,7 +80,7 @@ class GenerateCerfa2031(Node):
             
             # Chemins
             script_dir = Path(__file__).parent
-            yaml_config_path = script_dir / "cerfa_processing" / "cerfa_fields_template.yaml"
+            template_dir = script_dir / "cerfa_processing" / "_templace_cerfa_2026"
             
             # Chemin de sortie
             output_dir = getattr(memory, "output_dir", script_dir / "output")
@@ -92,11 +92,11 @@ class GenerateCerfa2031(Node):
             output_path = output_dir / f"cerfa_2031_{user_id}_{fiscal_year}.pdf"
             
             logger.info(f"Output path: {output_path}")
-            logger.info(f"YAML config: {yaml_config_path}")
+            logger.info(f"Template dir: {template_dir}")
             
             # Générer le PDF
             success = fill_cerfa_from_user_data(
-                yaml_config_path=str(yaml_config_path),
+                template_dir=str(template_dir),
                 cerfa_code="2031",
                 user_data=user_data,
                 output_path=str(output_path)

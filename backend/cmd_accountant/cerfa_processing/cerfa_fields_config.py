@@ -3,16 +3,17 @@ Configuration des champs Cerfa - SOURCE UNIQUE DE VÉRITÉ
 =========================================================
 
 Ce fichier définit tous les champs des formulaires Cerfa.
-C'est la seule source de vérité pour les labels et positions.
+C'est la seule source de vérité pour les labels et la logique de remplissage.
 
 Structure:
 - CERFA_FIELDS: dictionnaire principal indexé par cerfa_code et page_number
 - Chaque champ contient:
   * label: Texte exact à rechercher dans le PDF
-  * hook: Fonction qui calcule la valeur et la position
+  * hook: Fonction lambda qui calcule la valeur et la position
+          Signature: (label, text_position, user_data) -> Dict ou None
 """
 
-from typing import Dict, Any, Callable, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple
 
 
 # ============================================================================
@@ -30,59 +31,124 @@ CERFA_FIELDS = {
                 "fields": [
                     {
                         "label": "Exercice ouvert le",
-                        "hook": "exercice_ouvert",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": f"01/01/{user_data.get('fiscal_year', 2025)}",
+                            "x": 125,
+                            "y": 123.76,
+                            "font_size": 8,
+                            "font_name": "Helvetica",
+                            "color": (0, 0, 0)
+                        },
                     },
                     {
                         "label": "et clos le",
-                        "hook": "exercice_clos",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": f"31/12/{user_data.get('fiscal_year', 2025)}",
+                            "x": 125,
+                            "y": 134.07,
+                            "font_size": 8,
+                            "font_name": "Helvetica",
+                            "color": (0, 0, 0)
+                        },
                     },
                     {
                         "label": "Régime \"simplifié d'imposition\"",
-                        "hook": "regime_simplifie",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": "X",
+                            "x": 449.52,
+                            "y": 124.76,
+                            "font_size": 10,
+                            "font_name": "Helvetica-Bold",
+                            "color": (0, 0, 0)
+                        } if user_data.get("statut_fiscal", {}).get("regime_fiscal") == "reel_simplifie" else None,
                     },
                     {
                         "label": "Option pour la comptabilité super-simplifiée",
-                        "hook": "option_super_simplifie",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": "X",
+                            "x": 478.7,
+                            "y": 135.07,
+                            "font_size": 10,
+                            "font_name": "Helvetica-Bold",
+                            "color": (0, 0, 0)
+                        },
                     },
                     {
                         "label": "Dénomination de l'entreprise :",
-                        "hook": "denomination",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": user_data.get("siren", {}).get("denomination", ""),
+                            "x": 135.07,
+                            "y": 135.07,
+                            "font_size": 10,
+                            "font_name": "Helvetica",
+                            "color": (0, 0, 0)
+                        } if user_data.get("siren", {}).get("denomination") else None,
                     },
                     {
                         "label": "Adresse de l'entreprise :",
-                        "hook": "adresse",
+                        "hook": lambda label, text_position, user_data: (
+                            lambda adresse_complete: {
+                                "text": adresse_complete,
+                                "x": 125,
+                                "y": 200,
+                                "font_size": 10,
+                                "font_name": "Helvetica",
+                                "color": (0, 0, 0)
+                            } if adresse_complete else None
+                        )(f"{user_data.get('siren', {}).get('adresse', '')} {user_data.get('siren', {}).get('code_postal', '')} {user_data.get('siren', {}).get('ville', '')}".strip()),
                     },
                     {
                         "label": "Mél :",
-                        "hook": "email",
+                        "hook": lambda label, text_position, user_data: None,  # TODO: Ajouter email
                     },
                     {
                         "label": "Téléphone :",
-                        "hook": "telephone",
+                        "hook": lambda label, text_position, user_data: None,  # TODO: Ajouter téléphone
                     },
                     {
                         "label": "SIREN",
-                        "hook": "siren",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": user_data.get("siren", {}).get("numero", ""),
+                            "x": 125,
+                            "y": 250,
+                            "font_size": 10,
+                            "font_name": "Helvetica",
+                            "color": (0, 0, 0)
+                        } if user_data.get("siren", {}).get("numero") else None,
                     },
                     {
                         "label": "Préciser l'ancienne adresse en cas de changement :",
-                        "hook": "ancienne_adresse",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": user_data.get("siren", {}).get("ancienne_adresse", ""),
+                            "x": 125,
+                            "y": 260,
+                            "font_size": 10,
+                            "font_name": "Helvetica",
+                            "color": (0, 0, 0)
+                        } if user_data.get("siren", {}).get("ancienne_adresse") else None,
                     },
                     {
                         "label": "Activités exercées (souligner l'activité principale) :",
-                        "hook": "activites",
+                        "hook": lambda label, text_position, user_data: {
+                            "text": "Location meublée non professionnelle",
+                            "x": 125,
+                            "y": 215,
+                            "font_size": 8,
+                            "font_name": "Helvetica",
+                            "color": (0, 0, 0)
+                        },
                     },
                     {
                         "label": "3 Total",
-                        "hook": "total_3",
+                        "hook": lambda label, text_position, user_data: None,  # TODO: Calculer
                     },
                     {
                         "label": "4 Bénéfice imposable",
-                        "hook": "benefice_imposable",
+                        "hook": lambda label, text_position, user_data: None,  # TODO: Calculer
                     },
                     {
                         "label": "7 BIC non professionnels",
-                        "hook": "bic_non_pro",
+                        "hook": lambda label, text_position, user_data: None,  # TODO: Calculer
                     },
                 ]
             }

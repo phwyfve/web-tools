@@ -2,9 +2,9 @@
 Moteur de remplissage des PDF Cerfa
 
 Ce moteur:
-1. Lit le YAML de configuration des champs
+1. Lit la config des champs depuis cerfa_fields_config.py
 2. Copie le PDF template
-3. Parcourt les labels définis dans le YAML
+3. Parcourt les labels définis
 4. Pour chaque label trouvé, appelle le hook approprié
 5. Écrit les valeurs calculées dans le PDF
 
@@ -12,17 +12,16 @@ Flow naturel: comme si on remplissait le formulaire à la main
 """
 
 import fitz  # PyMuPDF
-import yaml
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 import logging
 import shutil
 
 try:
-    from .cerfa_fields_hooks import on_hook_reached
+    from .cerfa_fields_config import CERFA_FIELDS, get_all_labels_for_cerfa, get_field_config, get_template_file
 except ImportError:
     # Import absolu si exécuté comme script standalone
-    from cerfa_fields_hooks import on_hook_reached
+    from cerfa_fields_config import CERFA_FIELDS, get_all_labels_for_cerfa, get_field_config, get_template_file
 
 logger = logging.getLogger(__name__)
 
@@ -30,38 +29,15 @@ logger = logging.getLogger(__name__)
 class CerfaPdfFiller:
     """Moteur de remplissage des PDF Cerfa"""
     
-    def __init__(self, yaml_config_path: str):
+    def __init__(self, template_dir: str):
         """
         Initialise le moteur
         
         Args:
-            yaml_config_path: Chemin vers le fichier YAML de configuration
+            template_dir: Répertoire contenant les templates PDF
         """
-        self.yaml_config_path = Path(yaml_config_path)
-        self.config = self._load_yaml_config()
+        self.template_dir = Path(template_dir)
         
-        # Résoudre template_directory en chemin relatif au YAML
-        template_dir_str = self.config.get("template_directory", "")
-        if template_dir_str:
-            # Si chemin relatif, le résoudre par rapport au fichier YAML
-            template_dir = Path(template_dir_str)
-            if not template_dir.is_absolute():
-                template_dir = self.yaml_config_path.parent / template_dir
-            self.template_dir = template_dir
-        else:
-            self.template_dir = self.yaml_config_path.parent
-        
-    def _load_yaml_config(self) -> Dict:
-        """Charge la configuration YAML"""
-        try:
-            with open(self.yaml_config_path, 'r', encoding='utf-8') as f:
-                config = yaml.safe_load(f)
-            logger.info(f"Loaded YAML config: {self.yaml_config_path}")
-            return config
-        except Exception as e:
-            logger.error(f"Failed to load YAML config: {e}")
-            raise
-    
     def fill_cerfa(
         self,
         cerfa_code: str,
@@ -80,14 +56,17 @@ class CerfaPdfFiller:
             True si succès, False sinon
         """
         try:
-            # Trouver la config du Cerfa
-            cerfa_config = self._find_cerfa_config(cerfa_code)
-            if not cerfa_config:
-                logger.error(f"Cerfa {cerfa_code} not found in config")
+            # Vérifier que le Cerfa existe dans la config
+            if cerfa_code not in CERFA_FIELDS:
+                logger.error(f"Cerfa {cerfa_code} not found in CERFA_FIELDS config")
                 return False
             
-            # Chemin du template
-            template_filename = cerfa_config["cerfa_filename"]
+            # Récupérer le nom du template
+            template_filename = get_template_file(cerfa_code)
+            if not template_filename:
+                logger.error(f"No template file defined for Cerfa {cerfa_code}")
+                return False
+                
             template_path = self.template_dir / template_filename
             
             if not template_path.exists():
@@ -104,19 +83,22 @@ class CerfaPdfFiller:
             # Ouvrir le PDF copié pour édition
             doc = fitz.open(output_path)
             
+            # Récupérer la config du Cerfa
+            cerfa_config = CERFA_FIELDS[cerfa_code]
+            
             # Parcourir toutes les pages définies
             fields_written = 0
-            for page_config in cerfa_config.get("pages", []):
-                page_num = page_config["page_number"] - 1  # 0-indexed
+            for page_num, page_config in cerfa_config["pages"].items():
+                page_idx = page_num - 1  # 0-indexed
                 
-                if page_num >= len(doc):
-                    logger.warning(f"Page {page_num + 1} not found in PDF")
+                if page_idx >= len(doc):
+                    logger.warning(f"Page {page_num} not found in PDF")
                     continue
                 
-                page = doc[page_num]
+                page = doc[page_idx]
                 section = page_config.get("section", "")
                 
-                logger.info(f"Processing page {page_num + 1}, section: {section}")
+                logger.info(f"Processing page {page_num}, section: {section}")
                 
                 # Parcourir tous les champs de cette page
                 for field_config in page_config.get("fields", []):
@@ -135,13 +117,6 @@ class CerfaPdfFiller:
             logger.error(f"Error filling Cerfa: {e}", exc_info=True)
             return False
     
-    def _find_cerfa_config(self, cerfa_code: str) -> Optional[Dict]:
-        """Trouve la configuration d'un Cerfa par son code"""
-        for cerfa in self.config.get("cerfas", []):
-            if cerfa.get("cerfa_code") == cerfa_code:
-                return cerfa
-        return None
-    
     def _process_field(
         self,
         page: fitz.Page,
@@ -153,42 +128,47 @@ class CerfaPdfFiller:
         
         Args:
             page: Page PDF PyMuPDF
-            field_config: Configuration du champ depuis le YAML
+            field_config: Configuration du champ depuis cerfa_fields_config.py
             user_data: Données utilisateur
             
         Returns:
             True si le champ a été rempli, False sinon
         """
-        label_search = field_config.get("label_search", "")
+        label = field_config.get("label", "")
+        hook_func = field_config.get("hook")
         
-        if not label_search:
-            logger.warning("Field has no label_search, skipping")
+        if not label:
+            logger.warning("Field has no label, skipping")
+            return False
+        
+        if not hook_func:
+            logger.warning(f"Field '{label}' has no hook, skipping")
             return False
         
         # Rechercher le label dans la page
-        text_instances = page.search_for(label_search)
+        text_instances = page.search_for(label)
         
         if not text_instances:
-            logger.debug(f"Label not found: '{label_search}'")
+            logger.debug(f"Label not found: '{label}'")
             return False
         
         # Prendre la première occurrence
         label_rect = text_instances[0]
         text_position = (label_rect.x0, label_rect.y0, label_rect.x1, label_rect.y1)
         
-        logger.debug(f"Found label: '{label_search}' at {text_position}")
+        logger.debug(f"Found label: '{label}' at {text_position}")
         
-        # Appeler le hook pour calculer ce qu'il faut écrire
-        write_instruction = on_hook_reached(field_config, text_position, user_data)
+        # Appeler le hook (lambda) pour calculer ce qu'il faut écrire
+        write_instruction = hook_func(label, text_position, user_data)
         
         if not write_instruction:
-            logger.debug(f"Hook returned None for: '{label_search}'")
+            logger.debug(f"Hook returned None for: '{label}'")
             return False
         
         # Écrire le texte dans le PDF
         self._write_text_to_pdf(page, write_instruction)
         
-        logger.debug(f"✓ Written: '{write_instruction['text']}' for label '{label_search}'")
+        logger.debug(f"✓ Written: '{write_instruction['text']}' for label '{label}'")
         return True
     
     def _write_text_to_pdf(self, page: fitz.Page, instruction: Dict[str, Any]):
@@ -237,7 +217,7 @@ class CerfaPdfFiller:
 
 
 def fill_cerfa_from_user_data(
-    yaml_config_path: str,
+    template_dir: str,
     cerfa_code: str,
     user_data: Dict[str, Any],
     output_path: str
@@ -246,7 +226,7 @@ def fill_cerfa_from_user_data(
     Fonction helper pour remplir un Cerfa
     
     Args:
-        yaml_config_path: Chemin vers cerfa_fields_template.yaml
+        template_dir: Répertoire contenant les templates PDF
         cerfa_code: Code du Cerfa (ex: "2031")
         user_data: Données LMNP de l'utilisateur
         output_path: Chemin du PDF de sortie
@@ -254,7 +234,7 @@ def fill_cerfa_from_user_data(
     Returns:
         True si succès
     """
-    filler = CerfaPdfFiller(yaml_config_path)
+    filler = CerfaPdfFiller(template_dir)
     return filler.fill_cerfa(cerfa_code, user_data, output_path)
 
 
@@ -288,45 +268,23 @@ if __name__ == "__main__":
         "statut_fiscal": {
             "regime_fiscal": "reel_simplifie"
         },
-        "immobilisations": [
-            {
-                "valeur_origine": 200000,
-                "amortissements_cumules": 10000,
-                "valeur_nette_comptable": 190000
-            }
-        ],
-        "recettes": [
-            {"montant": 12000},
-            {"montant": 8000}
-        ],
-        "depenses": [],
-        "emprunts": [
-            {"capital_restant": 150000}
-        ],
-        "charges_detail": {
-            "impots_taxes": 2000
-        },
-        "total_dotations_amortissements": 4000,
-        "compte_resultat": {
-            "resultat_net": 6000
-        }
     }
     
     # Chemins
     script_dir = Path(__file__).parent
-    yaml_path = script_dir / "cerfa_fields_template.yaml"
+    template_dir = script_dir / "_templace_cerfa_2026"
     output_path = script_dir / "test_output_2031.pdf"
     
     print("="*80)
     print("TESTING CERFA PDF FILLER")
     print("="*80)
-    print(f"YAML config: {yaml_path}")
+    print(f"Template dir: {template_dir}")
     print(f"Output: {output_path}")
     print("="*80)
     
     # Remplir le Cerfa
     success = fill_cerfa_from_user_data(
-        str(yaml_path),
+        str(template_dir),
         "2031",
         test_user_data,
         str(output_path)
