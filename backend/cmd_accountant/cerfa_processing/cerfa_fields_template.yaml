@@ -91,7 +91,7 @@ cerfas:
             required: true
             computed: true
 
-          - label_search: "Adresse de l'entreprise l'entreprise :"
+          - label_search: "Adresse de l'entreprise :"
             field_path: "{siren.adresse} {siren.code_postal} {siren.ville}"
             field_direction: "right"
             field_type: "text"

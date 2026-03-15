@@ -1,21 +1,3 @@
-"""
-Cerfa Fields Hooks - Logique de remplissage des champs Cerfa
-
-Ce fichier contient la fonction principale `on_hook_reached` qui est appelée
-pour chaque label trouvé dans le PDF.
-
-Flow:
-1. Le moteur trouve un label dans le PDF (ex: "Exercice ouvert le")
-2. Il appelle on_hook_reached() avec:
-   - field_config: Config du champ depuis le YAML
-   - text_position: Position (x, y, width, height) du label trouvé
-   - user_data: Données LMNP de l'utilisateur pour l'année fiscale
-3. Le hook calcule:
-   - La valeur à écrire
-   - La position où écrire (relative au label)
-4. Le hook retourne les instructions d'écriture
-"""
-
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 import logging
@@ -23,86 +5,30 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def on_hook_reached(
-    field_config: Dict[str, Any],
-    text_position: Tuple[float, float, float, float],
-    user_data: Dict[str, Any]
-) -> Optional[Dict[str, Any]]:
-    """
-    Fonction appelée quand un label est trouvé dans le PDF.
-    
-    Args:
-        field_config: Configuration du champ depuis le YAML
-            {
-                "label_search": "Exercice ouvert le",
-                "field_path": "...",
-                "field_direction": "right",
-                "field_type": "text",
-                "required": true,
-                "default_value": "01/01/2025"
-            }
-        
-        text_position: Position du label trouvé (x0, y0, x1, y1)
-        
-        user_data: Données LMNP de l'utilisateur
-            {
-                "fiscal_year": 2025,
-                "siren": {...},
-                "logements": [...],
-                "recettes": [...],
-                "depenses": [...],
-                ...
-            }
-    
-    Returns:
-        Instructions d'écriture ou None si rien à écrire:
-        {
-            "text": "Valeur à écrire",
-            "x": 150.5,
-            "y": 700.2,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)  # RGB
-        }
-    """
-    
-    label = field_config.get("label_search", "")
-    field_type = field_config.get("field_type", "text")
-    field_direction = field_config.get("field_direction", "right")
-    
-    # Position du label
-    label_x0, label_y0, label_x1, label_y1 = text_position
-    
-    # Calcul de la position de la zone de saisie selon la direction
-    if field_direction == "right":
-        write_x = label_x1 + 5  # 5 points de marge à droite du label
-        write_y = label_y0
-    elif field_direction == "below":
-        write_x = label_x0
-        write_y = label_y0 - 15  # 15 points en dessous
-    elif field_direction == "right_aligned":
-        # Pour les montants alignés à droite (colonnes de chiffres)
-        write_x = label_x1 + 150  # Position fixe pour alignement
-        write_y = label_y0
-    else:
-        write_x = label_x1 + 5
-        write_y = label_y0
-    
-    # ========================================================================
-    # LOGIQUE DE REMPLISSAGE PAR LABEL
-    # ========================================================================
-    
-    # ------------------------------------------------------------------------
-    # Dates d'exercice
-    # ------------------------------------------------------------------------
-    if label == "Exercice ouvert le":
+# ============================================================================
+# HOOKS - Logique de remplissage par champ
+# ============================================================================
+# Chaque fonction hook reçoit:
+#   - label: le label tel que défini dans cerfa_fields_config.py
+#   - text_position: (x0, y0, x1, y1) position du label trouvé dans le PDF
+#   - user_data: données utilisateur LMNP
+#
+# Et retourne un dictionnaire avec:
+#   - text: le texte à écrire
+#   - x, y: position absolue où écrire
+#   - font_size, font_name, color: style du texte
+#
+# Retourne None si le champ ne doit pas être rempli.
+# ============================================================================
+
+def hook_exercice_ouvert(label: str, text_position: Tuple[float, float, float, float], user_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         fiscal_year = user_data.get("fiscal_year", 2025)
         value = f"01/01/{fiscal_year}"
         
         return {
             "text": value,
             "x": 125,
-            "y": write_y + 7,   # Centrage vertical ajusté
+            "y": 123.76,   # Centrage vertical ajusté
             "font_size": 8,     # Taille réduite pour correspondre au Cerfa
             "font_name": "Helvetica",
             "color": (0, 0, 0)
@@ -115,7 +41,7 @@ def on_hook_reached(
         return {
             "text": value,
             "x": 125,
-            "y": write_y + 7,   # Centrage vertical ajusté
+            "y": 134.07,   # Centrage vertical ajusté
             "font_size": 8,     # Taille réduite pour correspondre au Cerfa
             "font_name": "Helvetica",
             "color": (0, 0, 0)
@@ -131,10 +57,11 @@ def on_hook_reached(
         
         # Cocher si régime réel simplifié
         if regime == "reel_simplifie":
+            
             return {
                 "text": "X",
-                "x": write_x + 13,
-                "y": write_y + 8,   # Centrage vertical ajusté
+                "x": 449.52,
+                "y": 124.76,
                 "font_size": 10,    # Taille réduite
                 "font_name": "Helvetica-Bold",
                 "color": (0, 0, 0)
@@ -146,10 +73,14 @@ def on_hook_reached(
         default_checked = field_config.get("default_value") == "true"
         
         if default_checked:
+            final_x = 478.7 
+            final_y = 135.07
+            logger.info(f"[HOOK] Option super-simplifiée: label_position={text_position}, final_x={final_x}, final_y={final_y}")
+            
             return {
                 "text": "X",
-                "x": write_x + 10.4,
-                "y": write_y + 8,   # Centrage vertical ajusté
+                "x": final_x,
+                "y": final_y,   # Centrage vertical ajusté
                 "font_size": 10,    # Taille réduite
                 "font_name": "Helvetica-Bold",
                 "color": (0, 0, 0)
@@ -162,69 +93,36 @@ def on_hook_reached(
     if label == "Dénomination de l'entreprise :":
         siren = user_data.get("siren", {})
         denomination = siren.get("denomination", "")
-        
+        logger.info(f"[HOOK] Dénomination: '{denomination}' for label_position={text_position}")
         if denomination:
             return {
                 "text": denomination,
-                "x": write_x,
-                "y": write_y,
+                "x": 135.06764221191406,
+                "y": 135.06764221191406,
                 "font_size": 10,
                 "font_name": "Helvetica",
                 "color": (0, 0, 0)
             }
         return None
     
-    if label == "Adresse de l'entreprise l'entreprise :":
+    if label == "Adresse de l'entreprise :":
         siren = user_data.get("siren", {})
         adresse = siren.get("adresse", "")
         code_postal = siren.get("code_postal", "")
         ville = siren.get("ville", "")
-        
+        logger.info(f"[HOOK] Adresse: '{adresse} {code_postal} {ville}' for label_position={text_position}")
         adresse_complete = f"{adresse} {code_postal} {ville}".strip()
         
         if adresse_complete:
             return {
                 "text": adresse_complete,
-                "x": write_x,
-                "y": write_y,
+                "x": 125,
+                "y": 200,
                 "font_size": 10,
                 "font_name": "Helvetica",
                 "color": (0, 0, 0)
             }
         return None
-    
-    # ------------------------------------------------------------------------
-    # Identification
-    # ------------------------------------------------------------------------
-    if label == "IDENTIFICATION":
-        # Récupérer les données SIREN
-        siren = user_data.get("siren", {})
-        
-        # Construire la ligne d'identification
-        # Format: "Nom Prénom / Dénomination - N° SIREN"
-        nom = siren.get("nom", "")
-        prenom = siren.get("prenom", "")
-        denomination = siren.get("denomination", "")
-        numero_siren = siren.get("numero", "")
-        
-        if denomination:
-            identity = denomination
-        elif nom and prenom:
-            identity = f"{nom} {prenom}"
-        else:
-            identity = ""
-        
-        if numero_siren:
-            identity += f" - SIREN: {numero_siren}"
-        
-        return {
-            "text": identity,
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
     
     # ------------------------------------------------------------------------
     # Activité
@@ -234,119 +132,9 @@ def on_hook_reached(
         
         return {
             "text": default_activity,
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    # ------------------------------------------------------------------------
-    # Champs calculés - Actif
-    # ------------------------------------------------------------------------
-    if label == "Immobilisations corporelles":
-        # Calculer la somme des valeurs d'origine des immobilisations
-        immobilisations = user_data.get("immobilisations", [])
-        total_brut = sum(immo.get("valeur_origine", 0) for immo in immobilisations)
-        
-        return {
-            "text": f"{total_brut:,.2f}".replace(",", " "),  # Format français
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    if label == "Amortissements":
-        # Calculer la somme des amortissements cumulés
-        immobilisations = user_data.get("immobilisations", [])
-        total_amort = sum(immo.get("amortissements_cumules", 0) for immo in immobilisations)
-        
-        return {
-            "text": f"{total_amort:,.2f}".replace(",", " "),
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    # ------------------------------------------------------------------------
-    # Champs calculés - Passif
-    # ------------------------------------------------------------------------
-    if label == "Résultat de l'exercice":
-        # Récupérer le résultat net du compte de résultat
-        # (doit être calculé avant par le flow_lmnp_liasse)
-        compte_resultat = user_data.get("compte_resultat", {})
-        resultat_net = compte_resultat.get("resultat_net", 0)
-        
-        return {
-            "text": f"{resultat_net:,.2f}".replace(",", " "),
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    if label == "Dettes financières":
-        # Calculer la somme des capitaux restants dus
-        emprunts = user_data.get("emprunts", [])
-        total_dettes = sum(emp.get("capital_restant", 0) for emp in emprunts)
-        
-        return {
-            "text": f"{total_dettes:,.2f}".replace(",", " "),
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    # ------------------------------------------------------------------------
-    # Champs calculés - Produits
-    # ------------------------------------------------------------------------
-    if label == "Prestations de services":
-        # Somme des recettes
-        recettes = user_data.get("recettes", [])
-        total_recettes = sum(r.get("montant", 0) for r in recettes)
-        
-        return {
-            "text": f"{total_recettes:,.2f}".replace(",", " "),
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    # ------------------------------------------------------------------------
-    # Champs calculés - Charges
-    # ------------------------------------------------------------------------
-    if label == "Impôts et taxes":
-        # Depuis les charges détaillées calculées par le flow
-        charges_detail = user_data.get("charges_detail", {})
-        impots_taxes = charges_detail.get("impots_taxes", 0)
-        
-        return {
-            "text": f"{impots_taxes:,.2f}".replace(",", " "),
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
-            "font_name": "Helvetica",
-            "color": (0, 0, 0)
-        }
-    
-    if label == "Dotations aux amortissements":
-        # Total des dotations de l'exercice
-        total_dotations = user_data.get("total_dotations_amortissements", 0)
-        
-        return {
-            "text": f"{total_dotations:,.2f}".replace(",", " "),
-            "x": write_x,
-            "y": write_y,
-            "font_size": 10,
+            "x": 125,
+            "y": 215,  # En dessous du label
+            "font_size": 8,
             "font_name": "Helvetica",
             "color": (0, 0, 0)
         }
@@ -359,8 +147,8 @@ def on_hook_reached(
         
         return {
             "text": str(default_value),
-            "x": write_x,
-            "y": write_y,
+            "x": 125,
+            "y": 250,
             "font_size": 10,
             "font_name": "Helvetica",
             "color": (0, 0, 0)
