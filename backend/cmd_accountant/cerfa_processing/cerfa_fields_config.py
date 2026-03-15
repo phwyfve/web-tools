@@ -57,7 +57,7 @@ CERFA_FIELDS = {
                             "text": "X",
                             "x": 449.52,
                             "y": 124.76,
-                            "font_size": 10,
+                            "font_size": 8,
                             "font_name": "Helvetica-Bold",
                             "color": (0, 0, 0)
                         } if user_data.get("statut_fiscal", {}).get("regime_fiscal") == "reel_simplifie" else None,
@@ -68,7 +68,7 @@ CERFA_FIELDS = {
                             "text": "X",
                             "x": 478.7,
                             "y": 135.07,
-                            "font_size": 10,
+                            "font_size": 8,
                             "font_name": "Helvetica-Bold",
                             "color": (0, 0, 0)
                         },
@@ -77,9 +77,9 @@ CERFA_FIELDS = {
                         "label": "Dénomination de l'entreprise :",
                         "hook": lambda label, text_position, user_data: {
                             "text": user_data.get("siren", {}).get("denomination", ""),
-                            "x": 135.07,
-                            "y": 135.07,
-                            "font_size": 10,
+                            "x": 125,
+                            "y": 172,
+                            "font_size": 8,
                             "font_name": "Helvetica",
                             "color": (0, 0, 0)
                         } if user_data.get("siren", {}).get("denomination") else None,
@@ -89,9 +89,9 @@ CERFA_FIELDS = {
                         "hook": lambda label, text_position, user_data: (
                             lambda adresse_complete: {
                                 "text": adresse_complete,
-                                "x": 125,
-                                "y": 200,
-                                "font_size": 10,
+                                "x": 105,
+                                "y": 184,
+                                "font_size": 8,
                                 "font_name": "Helvetica",
                                 "color": (0, 0, 0)
                             } if adresse_complete else None
@@ -107,22 +107,24 @@ CERFA_FIELDS = {
                     },
                     {
                         "label": "SIREN",
-                        "hook": lambda label, text_position, user_data: {
-                            "text": user_data.get("siren", {}).get("numero", ""),
-                            "x": 125,
-                            "y": 250,
-                            "font_size": 10,
-                            "font_name": "Helvetica",
-                            "color": (0, 0, 0)
-                        } if user_data.get("siren", {}).get("numero") else None,
+                        "hook": lambda label, text_position, user_data: (
+                            lambda siren: {
+                                "text": "     ".join(siren),
+                                "x": 168,
+                                "y": 218,
+                                "font_size": 8,
+                                "font_name": "Helvetica",
+                                "color": (0, 0, 0)
+                            } if siren else None
+                        )(user_data.get("siren", {}).get("numero", "")),
                     },
                     {
                         "label": "Préciser l'ancienne adresse en cas de changement :",
                         "hook": lambda label, text_position, user_data: {
                             "text": user_data.get("siren", {}).get("ancienne_adresse", ""),
                             "x": 125,
-                            "y": 260,
-                            "font_size": 10,
+                            "y": 258,
+                            "font_size": 8,
                             "font_name": "Helvetica",
                             "color": (0, 0, 0)
                         } if user_data.get("siren", {}).get("ancienne_adresse") else None,
@@ -131,9 +133,9 @@ CERFA_FIELDS = {
                         "label": "Activités exercées (souligner l'activité principale) :",
                         "hook": lambda label, text_position, user_data: {
                             "text": "Location meublée non professionnelle",
-                            "x": 125,
-                            "y": 215,
-                            "font_size": 8,
+                            "x": 455,
+                            "y": 238,
+                            "font_size": 6.5,
                             "font_name": "Helvetica",
                             "color": (0, 0, 0)
                         },
